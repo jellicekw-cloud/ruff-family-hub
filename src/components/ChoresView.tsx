@@ -13,6 +13,7 @@ import {
   Clock, 
   Home, 
   RotateCw,
+  Shuffle,
   Award,
   AlertCircle
 } from 'lucide-react';
@@ -26,6 +27,7 @@ interface ChoresViewProps {
   onEditChore: (chore: ChoreItem) => void;
   onDeleteChore: (id: string) => void;
   onSyncChoresToCalendar?: () => void;
+  onRandomizeWeeklyChores?: () => void;
 }
 
 const areaColorMap: Record<ChoreArea, { bg: string; text: string; border: string }> = {
@@ -44,7 +46,8 @@ export const ChoresView: React.FC<ChoresViewProps> = ({
   onAddChore,
   onEditChore,
   onDeleteChore,
-  onSyncChoresToCalendar
+  onSyncChoresToCalendar,
+  onRandomizeWeeklyChores
 }) => {
   const [selectedArea, setSelectedArea] = useState<ChoreArea | 'ALL'>('ALL');
   const [selectedMemberId, setSelectedMemberId] = useState<string | 'ALL'>('ALL');
@@ -109,6 +112,17 @@ export const ChoresView: React.FC<ChoresViewProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {onRandomizeWeeklyChores && (
+              <button
+                onClick={onRandomizeWeeklyChores}
+                className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white font-bold rounded-2xl text-xs backdrop-blur border border-white/20 transition-all flex items-center gap-2"
+                title="Randomly assign this week's chores across the family"
+              >
+                <Shuffle className="w-4 h-4" />
+                <span>Randomize This Week</span>
+              </button>
+            )}
+
             {onSyncChoresToCalendar && (
               <button
                 onClick={onSyncChoresToCalendar}
@@ -166,16 +180,24 @@ export const ChoresView: React.FC<ChoresViewProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {members.map(m => {
+          {[...members]
+            .sort((a, b) => (memberPointsMap[b.id] || 0) - (memberPointsMap[a.id] || 0))
+            .map((m, rank) => {
             const pts = memberPointsMap[m.id] || 0;
             const completedForMember = chores.filter(c => c.assignedMemberId === m.id && c.isCompleted).length;
             const totalForMember = chores.filter(c => c.assignedMemberId === m.id).length;
+            const medal = pts > 0 ? (['🥇', '🥈', '🥉'][rank] || null) : null;
 
             return (
               <div 
                 key={m.id} 
-                className={`p-3.5 rounded-2xl border flex items-center justify-between transition-all ${m.bgClass}`}
+                className={`relative p-3.5 rounded-2xl border flex items-center justify-between transition-all ${m.bgClass} ${rank === 0 && pts > 0 ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''}`}
               >
+                {medal && (
+                  <span className="absolute -top-2 -left-2 text-lg drop-shadow-sm" title={`#${rank + 1} this week`}>
+                    {medal}
+                  </span>
+                )}
                 <div className="flex items-center space-x-3">
                   <div 
                     className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-xs"
