@@ -118,7 +118,7 @@ export const storageService = {
       const data = localStorage.getItem(STORAGE_KEYS.CHORES);
       if (!data) return INITIAL_CHORES;
       const parsed: ChoreItem[] = JSON.parse(data);
-      const validAreas = ['Kitchen', 'Living Room', 'Dining Room', 'Half Bathroom & Foyer', 'Laundry Room'];
+      const validAreas = ['Kitchen', 'Living Room', 'Dining Room', 'Half Bathroom & Foyer', 'Laundry Room', 'Staircase'];
       const areaMap: Record<string, ChoreArea> = {
         'Bathrooms': 'Half Bathroom & Foyer',
         'Laundry & Closet': 'Laundry Room',
@@ -149,3 +149,4 @@ export const storageService = {
     localStorage.removeItem(STORAGE_KEYS.CHORES);
   }
 };
+
