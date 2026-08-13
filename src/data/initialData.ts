@@ -193,14 +193,53 @@ export const INITIAL_REWARDS: Reward[] = [
 
 export const INITIAL_REDEMPTIONS: RewardRedemption[] = [];
 
+// What actually counts as "done" for each house area — shown on chore cards.
+// Points below are derived directly from checklist length (5 pts/task) so effort and points line up.
+export const AREA_CHECKLISTS: Record<ChoreArea, string[]> = {
+  'Kitchen': [
+    'Wash and dry dishes',
+    'Clean & disinfect countertops and bar, fix bar stools',
+    'Clean the stove and put away all food',
+    'Sweep and mop floors',
+    'Wipe down the fridge and microwave'
+  ],
+  'Living Room': [
+    'Sweep and mop floors',
+    'Vacuum and spray the chairs',
+    'Clean, organize & wipe down the TV console'
+  ],
+  'Dining Room': [
+    'Sweep and mop floors',
+    'Wipe down, spray, and push in chairs'
+  ],
+  'Half Bathroom & Foyer': [
+    'Sweep and mop bathroom and foyer floors',
+    'Clean toilet and sink',
+    'Wipe down the mirror',
+    'Change the trash',
+    'Spray/vacuum the benches and cushions',
+    'Dust the magazine table',
+    'Clean the bar'
+  ],
+  'Laundry Room': [
+    'Sweep and mop floor',
+    'Organize shelves',
+    'Wash, fold & put away any/all clothes in there, put the basket back'
+  ],
+  'Staircase': [
+    'Sweep and mop the stairs',
+    'Dust down the banister'
+  ]
+};
+
 // Shared pool of standard household chore areas, used by both the Add Chore
 // quick-presets and the "Randomize This Week's Chores" feature.
 export const WEEKLY_CHORE_POOL: { title: string; area: ChoreArea; points: number }[] = [
-  { title: 'Sanitize Kitchen Countertops', area: 'Kitchen', points: 15 },
-  { title: 'Vacuum & Mop Living Room', area: 'Living Room', points: 25 },
-  { title: 'Clear & Wipe Dining Table', area: 'Dining Room', points: 15 },
-  { title: 'Scrub Sink, Mirror & Sweep Foyer', area: 'Half Bathroom & Foyer', points: 20 },
-  { title: 'Wash, Fold & Organize Laundry', area: 'Laundry Room', points: 20 },
-  { title: 'Vacuum & Wipe Down Staircase', area: 'Staircase', points: 15 }
+  { title: 'Sanitize Kitchen Countertops', area: 'Kitchen', points: 25 },
+  { title: 'Vacuum & Mop Living Room', area: 'Living Room', points: 15 },
+  { title: 'Clear & Wipe Dining Table', area: 'Dining Room', points: 10 },
+  { title: 'Scrub Sink, Mirror & Sweep Foyer', area: 'Half Bathroom & Foyer', points: 35 },
+  { title: 'Wash, Fold & Organize Laundry', area: 'Laundry Room', points: 15 },
+  { title: 'Vacuum & Wipe Down Staircase', area: 'Staircase', points: 10 }
 ];
 
