@@ -121,3 +121,20 @@ export interface ChoreItem {
   notes?: string;
 }
 
+export interface Reward {
+  id: string;
+  title: string;
+  description?: string;
+  pointsCost: number;
+  emoji?: string; // simple visual tag, e.g. '🍕' or '💵'
+}
+
+export interface RewardRedemption {
+  id: string;
+  memberId: string;
+  rewardId: string;
+  rewardTitle: string; // snapshot in case the reward is edited/deleted later
+  pointsCost: number; // snapshot for the same reason
+  redeemedAt: string; // ISO date
+}
+
