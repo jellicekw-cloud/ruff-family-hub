@@ -182,13 +182,14 @@ export const INITIAL_CHORES: ChoreItem[] = [];
 // Starter rewards catalog — geared toward adult family members, not kids.
 // Fully editable in the app; this is just a sensible default set.
 export const INITIAL_REWARDS: Reward[] = [
-  { id: 'rwd-1', title: 'Choose the Movie/Show for Family Night', pointsCost: 30, emoji: '🎬' },
   { id: 'rwd-2', title: 'Sleep In Pass (skip your next morning chore)', pointsCost: 40, emoji: '😴' },
-  { id: 'rwd-3', title: 'Pick Family Dinner / Takeout Spot', pointsCost: 50, emoji: '🍕' },
   { id: 'rwd-4', title: 'Skip a Chore This Week', pointsCost: 60, emoji: '🙅' },
-  { id: 'rwd-5', title: 'First Pick of Weekend Plans', pointsCost: 75, emoji: '🗓️' },
-  { id: 'rwd-6', title: '$10 Cash', pointsCost: 150, emoji: '💵' },
-  { id: 'rwd-7', title: '$20 Cash', pointsCost: 300, emoji: '💰' }
+  { id: 'rwd-6', title: 'Dunkin\' Gift Card ($10)', pointsCost: 100, emoji: '🍩' },
+  { id: 'rwd-7', title: 'Chick-fil-A Gift Card ($15)', pointsCost: 130, emoji: '🐔' },
+  { id: 'rwd-8', title: '$10 Cash', pointsCost: 150, emoji: '💵' },
+  { id: 'rwd-9', title: 'Gas Card ($25)', pointsCost: 200, emoji: '⛽' },
+  { id: 'rwd-10', title: 'Apple Gift Card ($25)', pointsCost: 250, emoji: '🍎' },
+  { id: 'rwd-11', title: '$20 Cash', pointsCost: 300, emoji: '💰' }
 ];
 
 export const INITIAL_REDEMPTIONS: RewardRedemption[] = [];
