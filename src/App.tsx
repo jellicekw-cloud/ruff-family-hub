@@ -34,7 +34,7 @@ import {
 } from './types';
 import { storageService } from './services/storageService';
 import { celebrateChoreComplete, celebrateBigMilestone } from './utils/confetti';
-import { WEEKLY_CHORE_POOL } from './data/initialData';
+import { WEEKLY_CHORE_POOL, AREA_CHECKLISTS } from './data/initialData';
 import { isSupabaseConfigured } from './services/supabaseClient';
 import {
   fetchPantryFromSupabase,
@@ -260,14 +260,32 @@ export default function App() {
     const poolTitles = new Set(WEEKLY_CHORE_POOL.map(p => p.title));
     const keptChores = chores.filter(c => !(poolTitles.has(c.title) && c.dueDate >= weekStart && c.dueDate <= weekEnd));
 
-    // Shuffle family members so the rotation is different each time
+    // Shuffle family members so ties break differently each time
     const shuffledMembers = [...members].sort(() => Math.random() - 0.5);
 
-    const newChores: ChoreItem[] = WEEKLY_CHORE_POOL.map((preset, idx) => ({
+    // Balance real workload, not just "one area per person": heaviest areas
+    // (by actual checklist task count) get assigned first, always to whoever
+    // currently has the least total work — classic greedy load-balancing.
+    const areasByWeight = [...WEEKLY_CHORE_POOL].sort(
+      (a, b) => AREA_CHECKLISTS[b.area].length - AREA_CHECKLISTS[a.area].length
+    );
+
+    const memberLoad: Record<string, number> = {};
+    shuffledMembers.forEach(m => { memberLoad[m.id] = 0; });
+
+    const assignments = areasByWeight.map(preset => {
+      const minLoad = Math.min(...shuffledMembers.map(m => memberLoad[m.id]));
+      const candidates = shuffledMembers.filter(m => memberLoad[m.id] === minLoad);
+      const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+      memberLoad[chosen.id] += AREA_CHECKLISTS[preset.area].length;
+      return { preset, memberId: chosen.id };
+    });
+
+    const newChores: ChoreItem[] = assignments.map(({ preset, memberId }, idx) => ({
       id: `chore-rand-${Date.now()}-${idx}`,
       title: preset.title,
       area: preset.area,
-      assignedMemberId: shuffledMembers[idx % shuffledMembers.length].id,
+      assignedMemberId: memberId,
       frequency: 'Weekly',
       dueDate: weekDates[idx % weekDates.length],
       isCompleted: false,
@@ -279,9 +297,9 @@ export default function App() {
     setActiveTab('chores');
 
     const summary = newChores
-      .map(c => `${members.find(m => m.id === c.assignedMemberId)?.name || 'Someone'} → ${c.area}`)
+      .map(c => `${members.find(m => m.id === c.assignedMemberId)?.name || 'Someone'} → ${c.area} (${AREA_CHECKLISTS[c.area].length} tasks)`)
       .join('\n');
-    alert(`🎲 This week's chores are randomized!\n\n${summary}`);
+    alert(`🎲 This week's chores are randomized (balanced by workload)!\n\n${summary}`);
   };
 
   // --- REWARDS HANDLERS ---
