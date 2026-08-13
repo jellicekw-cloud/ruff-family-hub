@@ -1,4 +1,4 @@
-import app from "../server/app";
+import app from "../server/app.js";
 
 // Vercel's Node.js runtime accepts an Express app directly as a request handler
 // (it has the same (req, res) signature Node's http server expects).
