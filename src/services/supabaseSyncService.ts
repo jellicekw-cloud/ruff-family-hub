@@ -1,4 +1,4 @@
-import { PantryItem, ShoppingItem, CategoryType } from '../types';
+import { PantryItem, ShoppingItem, CategoryType, FamilyMember } from '../types';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 // --- Row shapes (snake_case, matching the SQL schema) ---
@@ -152,3 +152,75 @@ export async function syncShoppingListToSupabase(items: ShoppingItem[]): Promise
     if (upsertErr) console.error('Supabase shopping upsert error:', upsertErr.message);
   }
 }
+
+// --- Family Members ---
+
+interface FamilyMemberRow {
+  id: string;
+  name: string;
+  role: string;
+  color: string;
+  bg_class: string;
+  badge_class: string;
+  avatar_icon: string | null;
+  dietary_notes: string | null;
+  sort_order: number;
+}
+
+const memberToRow = (m: FamilyMember, sortOrder: number): FamilyMemberRow => ({
+  id: m.id,
+  name: m.name,
+  role: m.role,
+  color: m.color,
+  bg_class: m.bgClass,
+  badge_class: m.badgeClass,
+  avatar_icon: m.avatarIcon || null,
+  dietary_notes: m.dietaryNotes || null,
+  sort_order: sortOrder,
+});
+
+const rowToMember = (r: FamilyMemberRow): FamilyMember => ({
+  id: r.id,
+  name: r.name,
+  role: r.role as FamilyMember['role'],
+  color: r.color,
+  bgClass: r.bg_class,
+  badgeClass: r.badge_class,
+  avatarIcon: r.avatar_icon || undefined,
+  dietaryNotes: r.dietary_notes || undefined,
+});
+
+export async function fetchFamilyMembersFromSupabase(): Promise<FamilyMember[] | null> {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase.from('family_members').select('*').order('sort_order');
+  if (error) {
+    console.error('Supabase fetchFamilyMembers error:', error.message);
+    return null;
+  }
+  return (data as FamilyMemberRow[]).map(rowToMember);
+}
+
+export async function syncFamilyMembersToSupabase(members: FamilyMember[]): Promise<void> {
+  if (!isSupabaseConfigured) return;
+
+  const { data: existing, error: fetchErr } = await supabase.from('family_members').select('id');
+  if (fetchErr) {
+    console.error('Supabase family members pre-sync fetch error:', fetchErr.message);
+    return;
+  }
+
+  const currentIds = new Set(members.map(m => m.id));
+  const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
+
+  if (staleIds.length > 0) {
+    const { error: delErr } = await supabase.from('family_members').delete().in('id', staleIds);
+    if (delErr) console.error('Supabase family members delete error:', delErr.message);
+  }
+
+  if (members.length > 0) {
+    const rows = members.map((m, idx) => memberToRow(m, idx));
+    const { error: upsertErr } = await supabase.from('family_members').upsert(rows);
+    if (upsertErr) console.error('Supabase family members upsert error:', upsertErr.message);
+  }
+}
+
