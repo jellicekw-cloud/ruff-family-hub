@@ -105,7 +105,7 @@ export interface SyncCalendarConfig {
 }
 
 export type ChoreFrequency = 'Daily' | 'Weekly' | 'Bi-Weekly' | 'Monthly' | 'Seasonal';
-export type ChoreArea = 'Kitchen' | 'Living Room' | 'Dining Room' | 'Half Bathroom & Foyer' | 'Laundry Room';
+export type ChoreArea = 'Kitchen' | 'Living Room' | 'Dining Room' | 'Half Bathroom & Foyer' | 'Laundry Room' | 'Staircase';
 
 export interface ChoreItem {
   id: string;
@@ -120,3 +120,4 @@ export interface ChoreItem {
   points: number;
   notes?: string;
 }
+
