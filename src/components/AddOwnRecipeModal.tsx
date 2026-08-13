@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { X, Sparkles, Loader2, UploadCloud, FileText, Image as ImageIcon, ChefHat, CheckCircle2 } from 'lucide-react';
+import { X, Sparkles, Loader2, UploadCloud, FileText, Image as ImageIcon, ChefHat, CheckCircle2, Link as LinkIcon } from 'lucide-react';
 import { Recipe } from '../types';
 
 interface AddOwnRecipeModalProps {
@@ -8,7 +8,7 @@ interface AddOwnRecipeModalProps {
   onSaveRecipe: (recipe: Recipe) => void;
 }
 
-type InputMode = 'paste' | 'file';
+type InputMode = 'paste' | 'file' | 'url';
 
 export const AddOwnRecipeModal: React.FC<AddOwnRecipeModalProps> = ({
   isOpen,
@@ -17,6 +17,7 @@ export const AddOwnRecipeModal: React.FC<AddOwnRecipeModalProps> = ({
 }) => {
   const [mode, setMode] = useState<InputMode>('paste');
   const [rawText, setRawText] = useState('');
+  const [urlInput, setUrlInput] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState<string | null>(null);
@@ -32,6 +33,7 @@ export const AddOwnRecipeModal: React.FC<AddOwnRecipeModalProps> = ({
 
   const resetAll = () => {
     setRawText('');
+    setUrlInput('');
     setFileName(null);
     setImageBase64(null);
     setImageMimeType(null);
@@ -82,20 +84,23 @@ export const AddOwnRecipeModal: React.FC<AddOwnRecipeModalProps> = ({
   };
 
   const handleParse = async () => {
-    if (!rawText.trim() && !imageBase64) return;
+    if (mode === 'url' && !urlInput.trim()) return;
+    if (mode !== 'url' && !rawText.trim() && !imageBase64) return;
     setIsParsing(true);
     setError(null);
     setParsedRecipe(null);
 
     try {
+      const body = mode === 'url'
+        ? { url: urlInput.trim() }
+        : imageBase64
+          ? { imageBase64, imageMimeType }
+          : { rawText };
+
       const res = await fetch('/api/gemini/recipe-parser', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          imageBase64
-            ? { imageBase64, imageMimeType }
-            : { rawText }
-        )
+        body: JSON.stringify(body)
       });
 
       const data = await res.json();
@@ -136,7 +141,11 @@ export const AddOwnRecipeModal: React.FC<AddOwnRecipeModalProps> = ({
     onClose();
   };
 
-  const hasInput = mode === 'paste' ? rawText.trim().length > 0 : !!imageBase64 || rawText.trim().length > 0;
+  const hasInput = mode === 'paste'
+    ? rawText.trim().length > 0
+    : mode === 'url'
+      ? urlInput.trim().length > 0
+      : !!imageBase64 || rawText.trim().length > 0;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -185,9 +194,32 @@ export const AddOwnRecipeModal: React.FC<AddOwnRecipeModalProps> = ({
               >
                 <UploadCloud className="w-3.5 h-3.5" /> Upload File
               </button>
+              <button
+                onClick={() => { setMode('url'); setError(null); }}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                  mode === 'url' ? 'bg-white dark:bg-slate-700 shadow-xs text-violet-700 dark:text-violet-300' : 'text-slate-500'
+                }`}
+              >
+                <LinkIcon className="w-3.5 h-3.5" /> From Website
+              </button>
             </div>
 
-            {mode === 'paste' ? (
+            {mode === 'url' && (
+              <div className="space-y-2">
+                <input
+                  type="url"
+                  placeholder="https://example.com/recipe/creamy-garlic-chicken"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                <p className="text-[11px] text-slate-400">
+                  Paste a link to any recipe page — a blog, AllRecipes, NYT Cooking, etc. Gemini will read the page and pull out the recipe.
+                </p>
+              </div>
+            )}
+
+            {mode === 'paste' && (
               <textarea
                 rows={6}
                 placeholder="Paste your recipe here — ingredients, amounts, and steps, in whatever format you have it..."
@@ -195,7 +227,9 @@ export const AddOwnRecipeModal: React.FC<AddOwnRecipeModalProps> = ({
                 onChange={(e) => setRawText(e.target.value)}
                 className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
-            ) : (
+            )}
+
+            {mode === 'file' && (
               <div className="space-y-3">
                 <button
                   type="button"
