@@ -10,6 +10,7 @@ import { CalendarView } from './components/CalendarView';
 import { ChoresView } from './components/ChoresView';
 import { PantryView } from './components/PantryView';
 import { RecipeView } from './components/RecipeView';
+import { RewardsView } from './components/RewardsView';
 import { ShoppingListView } from './components/ShoppingListView';
 import { FamilyMembersView } from './components/FamilyMembersView';
 
@@ -27,7 +28,9 @@ import {
   Recipe, 
   ShoppingItem, 
   SyncCalendarConfig,
-  ChoreItem
+  ChoreItem,
+  Reward,
+  RewardRedemption
 } from './types';
 import { storageService } from './services/storageService';
 import { celebrateChoreComplete, celebrateBigMilestone } from './utils/confetti';
@@ -43,7 +46,7 @@ import {
 } from './services/supabaseSyncService';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'calendar' | 'chores' | 'pantry' | 'recipes' | 'shopping' | 'members'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'chores' | 'pantry' | 'recipes' | 'shopping' | 'members' | 'rewards'>('calendar');
 
   // House-wide scrolling announcements. Add/remove strings here to update the ticker banner.
   const houseAnnouncements = [
@@ -54,6 +57,8 @@ export default function App() {
   const [members, setMembers] = useState<FamilyMember[]>(() => storageService.getMembers());
   const [events, setEvents] = useState<CalendarEvent[]>(() => storageService.getEvents());
   const [chores, setChores] = useState<ChoreItem[]>(() => storageService.getChores());
+  const [rewards, setRewards] = useState<Reward[]>(() => storageService.getRewards());
+  const [redemptions, setRedemptions] = useState<RewardRedemption[]>(() => storageService.getRedemptions());
   // Pantry & Shopping List are synced to Supabase (shared across devices, e.g. a family tablet + your phone).
   // Local state seeds from localStorage/initial data first, then gets replaced by the Supabase fetch on mount.
   const [pantry, setPantry] = useState<PantryItem[]>(() => storageService.getPantry());
@@ -83,6 +88,8 @@ export default function App() {
   // Auto Save to storage
   useEffect(() => { storageService.saveEvents(events); }, [events]);
   useEffect(() => { storageService.saveChores(chores); }, [chores]);
+  useEffect(() => { storageService.saveRewards(rewards); }, [rewards]);
+  useEffect(() => { storageService.saveRedemptions(redemptions); }, [redemptions]);
   useEffect(() => { storageService.saveRecipes(recipes); }, [recipes]);
   useEffect(() => { storageService.saveSyncConfig(syncConfig); }, [syncConfig]);
 
@@ -275,6 +282,31 @@ export default function App() {
       .map(c => `${members.find(m => m.id === c.assignedMemberId)?.name || 'Someone'} → ${c.area}`)
       .join('\n');
     alert(`🎲 This week's chores are randomized!\n\n${summary}`);
+  };
+
+  // --- REWARDS HANDLERS ---
+  const handleRedeemReward = (memberId: string, reward: Reward) => {
+    const newRedemption: RewardRedemption = {
+      id: `redeem-${Date.now()}`,
+      memberId,
+      rewardId: reward.id,
+      rewardTitle: reward.title,
+      pointsCost: reward.pointsCost,
+      redeemedAt: new Date().toISOString()
+    };
+    setRedemptions([...redemptions, newRedemption]);
+    celebrateChoreComplete();
+
+    const member = members.find(m => m.id === memberId);
+    alert(`${reward.emoji || '🎁'} ${member?.name || 'You'} redeemed "${reward.title}" for ${reward.pointsCost} points!`);
+  };
+
+  const handleAddReward = (reward: Reward) => {
+    setRewards([...rewards, reward]);
+  };
+
+  const handleDeleteReward = (rewardId: string) => {
+    setRewards(rewards.filter(r => r.id !== rewardId));
   };
 
   // --- CALENDAR HANDLERS ---
@@ -641,6 +673,18 @@ export default function App() {
             onAddShoppingItem={handleAddShoppingItem}
             onRestockToPantry={handleRestockCheckedToPantry}
             onClearCompleted={handleClearCompletedShopping}
+          />
+        )}
+
+        {activeTab === 'rewards' && (
+          <RewardsView
+            members={members}
+            chores={chores}
+            rewards={rewards}
+            redemptions={redemptions}
+            onRedeem={handleRedeemReward}
+            onAddReward={handleAddReward}
+            onDeleteReward={handleDeleteReward}
           />
         )}
 
