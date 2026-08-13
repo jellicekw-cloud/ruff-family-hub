@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+:root {
+  font-family: 'Franklin Gothic Book', 'Libre Franklin', 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', Arial, sans-serif;
+}
+
+body, html, input, select, textarea, button, form, label {
+  font-family: 'Franklin Gothic Book', 'Libre Franklin', 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', Arial, sans-serif !important;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "The Ruffs - Family Hub",
+  "description": "Organize family calendars with color-coded events, manage pantry inventory, discover recipes from available ingredients, sync smart shopping lists, and track house cleaning schedules.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
