@@ -200,19 +200,64 @@ app.post("/api/gemini/smart-meal-plan", async (req, res) => {
   }
 });
 
-// 4. Parse a user's own recipe from pasted text or an uploaded photo/file
+// Strips a webpage down to readable text so it can be handed to Gemini without
+// wasting tokens on scripts, styles, and markup noise.
+function extractReadableTextFromHtml(html: string): string {
+  let text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<\/(p|div|li|tr|br|h[1-6])>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n+/g, '\n')
+    .trim();
+
+  // Cap length so we don't blow the prompt budget on huge pages full of unrelated content
+  return text.slice(0, 18000);
+}
+
+// 4. Parse a user's own recipe from pasted text, an uploaded photo/file, or a recipe website URL
 app.post("/api/gemini/recipe-parser", async (req, res) => {
   try {
-    const { rawText, imageBase64, imageMimeType } = req.body;
+    const { rawText, imageBase64, imageMimeType, url } = req.body;
 
-    if (!rawText && !imageBase64) {
-      return res.status(400).json({ success: false, error: "Provide rawText or imageBase64" });
+    if (!rawText && !imageBase64 && !url) {
+      return res.status(400).json({ success: false, error: "Provide rawText, imageBase64, or url" });
+    }
+
+    let resolvedText = rawText;
+
+    if (url) {
+      try {
+        const pageRes = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RuffFamilyHub/1.0)' }
+        });
+        if (!pageRes.ok) {
+          return res.status(400).json({ success: false, error: `Couldn't load that page (status ${pageRes.status}). Try pasting the recipe text instead.` });
+        }
+        const html = await pageRes.text();
+        resolvedText = extractReadableTextFromHtml(html);
+        if (!resolvedText || resolvedText.length < 40) {
+          return res.status(400).json({ success: false, error: "Couldn't find readable recipe content on that page. Try pasting the recipe text instead." });
+        }
+      } catch (fetchErr: any) {
+        console.error("Error fetching recipe URL:", fetchErr);
+        return res.status(400).json({ success: false, error: "Couldn't reach that URL. Check the link and try again, or paste the recipe text instead." });
+      }
     }
 
     const instruction = `
-    Extract a single recipe from the provided ${imageBase64 ? "photo" : "text"} (could be a handwritten card, a screenshot, a pasted note, or a copied web recipe).
+    Extract a single recipe from the provided ${imageBase64 ? "photo" : url ? "webpage content" : "text"} (could be a handwritten card, a screenshot, a pasted note, or a recipe website).
     Return one structured recipe with a title, short description, prep/cook time in minutes, servings, category (e.g. Mexican, Italian, Breakfast, Vegetarian), difficulty (Easy/Medium/Hard), helpful tags, estimated calories per serving, a full ingredient list (name + amount, e.g. "2 cups" or "1 lb"), and clear numbered step-by-step instructions.
     If information is missing or illegible, make a reasonable, realistic estimate rather than leaving fields blank.
+    Ignore unrelated webpage content like ads, comments, navigation links, or other article recommendations — focus only on the actual recipe.
     `;
 
     const contentParts: any[] = [{ text: instruction }];
@@ -224,7 +269,7 @@ app.post("/api/gemini/recipe-parser", async (req, res) => {
         }
       });
     } else {
-      contentParts.push({ text: `Recipe text:\n"""\n${rawText}\n"""` });
+      contentParts.push({ text: `Recipe content:\n"""\n${resolvedText}\n"""` });
     }
 
     const response = await ai.models.generateContent({
