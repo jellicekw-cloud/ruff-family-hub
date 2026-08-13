@@ -1,4 +1,4 @@
-import { FamilyMember, CalendarEvent, PantryItem, Recipe, ShoppingItem, SyncCalendarConfig, ChoreItem } from '../types';
+import { FamilyMember, CalendarEvent, PantryItem, Recipe, ShoppingItem, SyncCalendarConfig, ChoreItem, ChoreArea } from '../types';
 
 // Helper for relative date strings YYYY-MM-DD
 export function getRelativeDateString(offsetDays: number): string {
@@ -178,4 +178,15 @@ export const INITIAL_SYNC_CONFIG: SyncCalendarConfig = {
 };
 
 export const INITIAL_CHORES: ChoreItem[] = [];
+
+// Shared pool of standard household chore areas, used by both the Add Chore
+// quick-presets and the "Randomize This Week's Chores" feature.
+export const WEEKLY_CHORE_POOL: { title: string; area: ChoreArea; points: number }[] = [
+  { title: 'Sanitize Kitchen Countertops', area: 'Kitchen', points: 15 },
+  { title: 'Vacuum & Mop Living Room', area: 'Living Room', points: 25 },
+  { title: 'Clear & Wipe Dining Table', area: 'Dining Room', points: 15 },
+  { title: 'Scrub Sink, Mirror & Sweep Foyer', area: 'Half Bathroom & Foyer', points: 20 },
+  { title: 'Wash, Fold & Organize Laundry', area: 'Laundry Room', points: 20 },
+  { title: 'Vacuum & Wipe Down Staircase', area: 'Staircase', points: 15 }
+];
 
