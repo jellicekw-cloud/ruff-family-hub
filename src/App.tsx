@@ -95,7 +95,10 @@ export default function App() {
       if (cloudMembers === null && cloudPantry === null && cloudShopping === null) {
         setCloudSyncError('Could not reach Supabase — using data saved on this device only.');
       } else {
-        if (cloudMembers !== null) setMembers(cloudMembers);
+        // Family Members: only adopt cloud data once it's actually been seeded.
+        // An empty cloud table (first-ever sync) means "not seeded yet," not "delete everyone" —
+        // in that case we keep local data as-is and let the write-sync effect push it up instead.
+        if (cloudMembers !== null && cloudMembers.length > 0) setMembers(cloudMembers);
         if (cloudPantry !== null) setPantry(cloudPantry);
         if (cloudShopping !== null) setShoppingList(cloudShopping);
       }
