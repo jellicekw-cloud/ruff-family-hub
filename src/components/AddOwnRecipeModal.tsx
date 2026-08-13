@@ -103,7 +103,17 @@ export const AddOwnRecipeModal: React.FC<AddOwnRecipeModalProps> = ({
         body: JSON.stringify(body)
       });
 
-      const data = await res.json();
+      const rawResponseText = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(rawResponseText);
+      } catch {
+        throw new Error(
+          `Server returned a non-JSON response (status ${res.status}). ` +
+          `This usually means the request timed out or crashed before finishing. ` +
+          `First 200 chars: ${rawResponseText.slice(0, 200) || '(empty response)'}`
+        );
+      }
       if (!data.success) {
         throw new Error(data.error || 'Failed to parse recipe');
       }
