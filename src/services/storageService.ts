@@ -1,4 +1,4 @@
-import { FamilyMember, CalendarEvent, PantryItem, Recipe, ShoppingItem, SyncCalendarConfig, ChoreItem, ChoreArea } from '../types';
+import { FamilyMember, CalendarEvent, PantryItem, Recipe, ShoppingItem, SyncCalendarConfig, ChoreItem, ChoreArea, Reward, RewardRedemption } from '../types';
 import { 
   INITIAL_FAMILY_MEMBERS, 
   INITIAL_EVENTS, 
@@ -6,7 +6,9 @@ import {
   INITIAL_RECIPES, 
   INITIAL_SHOPPING_LIST,
   INITIAL_SYNC_CONFIG,
-  INITIAL_CHORES 
+  INITIAL_CHORES,
+  INITIAL_REWARDS,
+  INITIAL_REDEMPTIONS
 } from '../data/initialData';
 
 const STORAGE_KEYS = {
@@ -16,7 +18,9 @@ const STORAGE_KEYS = {
   RECIPES: 'family_hub_recipes_v1',
   SHOPPING: 'family_hub_shopping_v1',
   SYNC_CONFIG: 'family_hub_sync_config_v1',
-  CHORES: 'family_hub_chores_v3'
+  CHORES: 'family_hub_chores_v3',
+  REWARDS: 'family_hub_rewards_v1',
+  REDEMPTIONS: 'family_hub_redemptions_v1'
 };
 
 export const storageService = {
@@ -139,6 +143,32 @@ export const storageService = {
     localStorage.setItem(STORAGE_KEYS.CHORES, JSON.stringify(chores));
   },
 
+  getRewards(): Reward[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.REWARDS);
+      return data ? JSON.parse(data) : INITIAL_REWARDS;
+    } catch {
+      return INITIAL_REWARDS;
+    }
+  },
+
+  saveRewards(rewards: Reward[]): void {
+    localStorage.setItem(STORAGE_KEYS.REWARDS, JSON.stringify(rewards));
+  },
+
+  getRedemptions(): RewardRedemption[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.REDEMPTIONS);
+      return data ? JSON.parse(data) : INITIAL_REDEMPTIONS;
+    } catch {
+      return INITIAL_REDEMPTIONS;
+    }
+  },
+
+  saveRedemptions(redemptions: RewardRedemption[]): void {
+    localStorage.setItem(STORAGE_KEYS.REDEMPTIONS, JSON.stringify(redemptions));
+  },
+
   resetAllData(): void {
     localStorage.removeItem(STORAGE_KEYS.FAMILY_MEMBERS);
     localStorage.removeItem(STORAGE_KEYS.EVENTS);
@@ -147,6 +177,8 @@ export const storageService = {
     localStorage.removeItem(STORAGE_KEYS.SHOPPING);
     localStorage.removeItem(STORAGE_KEYS.SYNC_CONFIG);
     localStorage.removeItem(STORAGE_KEYS.CHORES);
+    localStorage.removeItem(STORAGE_KEYS.REWARDS);
+    localStorage.removeItem(STORAGE_KEYS.REDEMPTIONS);
   }
 };
 
