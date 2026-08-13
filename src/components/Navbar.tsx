@@ -9,13 +9,14 @@ import {
   Sparkles,
   PlusCircle,
   Clock,
-  CheckSquare
+  CheckSquare,
+  Gift
 } from 'lucide-react';
 import { SyncCalendarConfig } from '../types';
 
 interface NavbarProps {
-  activeTab: 'calendar' | 'chores' | 'pantry' | 'recipes' | 'shopping' | 'members';
-  setActiveTab: (tab: 'calendar' | 'chores' | 'pantry' | 'recipes' | 'shopping' | 'members') => void;
+  activeTab: 'calendar' | 'chores' | 'pantry' | 'recipes' | 'shopping' | 'members' | 'rewards';
+  setActiveTab: (tab: 'calendar' | 'chores' | 'pantry' | 'recipes' | 'shopping' | 'members' | 'rewards') => void;
   syncConfig: SyncCalendarConfig;
   onOpenConnectCalendar: () => void;
   onOpenAddEvent: () => void;
@@ -147,6 +148,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('rewards')}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'rewards'
+                  ? 'bg-white dark:bg-slate-700 text-fuchsia-700 dark:text-fuchsia-300 shadow-xs font-bold'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Gift className="w-4 h-4 text-fuchsia-600" />
+              <span>Rewards</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('members')}
               className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 activeTab === 'members'
@@ -253,7 +266,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           <ShoppingCart className="w-5 h-5" />
           <span>Shopping</span>
         </button>
+        <button
+          onClick={() => setActiveTab('rewards')}
+          className={`flex flex-col items-center space-y-0.5 text-xs font-medium ${
+            activeTab === 'rewards' ? 'text-fuchsia-600 dark:text-fuchsia-400 font-bold' : 'text-slate-500'
+          }`}
+        >
+          <Gift className="w-5 h-5" />
+          <span>Rewards</span>
+        </button>
       </div>
     </header>
   );
 };
+
