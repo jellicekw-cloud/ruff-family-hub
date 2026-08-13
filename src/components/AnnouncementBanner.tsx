@@ -21,8 +21,8 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ messages
         </div>
         <div className="flex-1 overflow-hidden whitespace-nowrap py-2">
           <div className="inline-flex marquee-track">
-            <span className="px-6 text-sm font-bold tracking-wide">{joined}</span>
-            <span className="px-6 text-sm font-bold tracking-wide" aria-hidden="true">{joined}</span>
+            <span className="px-6 text-base font-bold tracking-wide announcement-flash">{joined}</span>
+            <span className="px-6 text-base font-bold tracking-wide announcement-flash" aria-hidden="true">{joined}</span>
           </div>
         </div>
       </div>
