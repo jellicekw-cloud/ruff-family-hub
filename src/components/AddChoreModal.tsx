@@ -77,7 +77,8 @@ export const AddChoreModal: React.FC<AddChoreModalProps> = ({
     { title: 'Vacuum & Mop Living Room', area: 'Living Room' as ChoreArea, points: 25 },
     { title: 'Clear & Wipe Dining Table', area: 'Dining Room' as ChoreArea, points: 15 },
     { title: 'Scrub Sink, Mirror & Sweep Foyer', area: 'Half Bathroom & Foyer' as ChoreArea, points: 20 },
-    { title: 'Wash, Fold & Organize Laundry', area: 'Laundry Room' as ChoreArea, points: 20 }
+    { title: 'Wash, Fold & Organize Laundry', area: 'Laundry Room' as ChoreArea, points: 20 },
+    { title: 'Vacuum & Wipe Down Staircase', area: 'Staircase' as ChoreArea, points: 15 }
   ];
 
   return (
@@ -164,6 +165,7 @@ export const AddChoreModal: React.FC<AddChoreModalProps> = ({
                 <option value="Dining Room">Dining Room</option>
                 <option value="Half Bathroom & Foyer">Half Bathroom & Foyer</option>
                 <option value="Laundry Room">Laundry Room</option>
+                <option value="Staircase">Staircase</option>
               </select>
             </div>
 
@@ -299,3 +301,4 @@ export const AddChoreModal: React.FC<AddChoreModalProps> = ({
     </div>
   );
 };
+
