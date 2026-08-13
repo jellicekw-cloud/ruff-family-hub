@@ -15,7 +15,7 @@ export const INITIAL_FAMILY_MEMBERS: FamilyMember[] = [
     color: '#9333ea', // Purple
     bgClass: 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950/60 dark:text-purple-200 dark:border-purple-700',
     badgeClass: 'bg-purple-600 text-white',
-    dietaryNotes: 'Prefers Low-Carb'
+    dietaryNotes: 'Low Sodium'
   },
   {
     id: 'mem-2',
@@ -24,7 +24,7 @@ export const INITIAL_FAMILY_MEMBERS: FamilyMember[] = [
     color: '#ea580c', // Orange
     bgClass: 'bg-orange-100 text-orange-900 border-orange-300 dark:bg-orange-950/60 dark:text-orange-200 dark:border-orange-700',
     badgeClass: 'bg-orange-600 text-white',
-    dietaryNotes: 'High Protein'
+    dietaryNotes: 'High Protein, Low Carb'
   },
   {
     id: 'mem-3',
@@ -33,7 +33,7 @@ export const INITIAL_FAMILY_MEMBERS: FamilyMember[] = [
     color: '#16a34a', // Green
     bgClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-700',
     badgeClass: 'bg-emerald-600 text-white',
-    dietaryNotes: 'Plant-based options'
+    dietaryNotes: undefined
   },
   {
     id: 'mem-4',
@@ -42,7 +42,7 @@ export const INITIAL_FAMILY_MEMBERS: FamilyMember[] = [
     color: '#2563eb', // Blue
     bgClass: 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-700',
     badgeClass: 'bg-blue-600 text-white',
-    dietaryNotes: 'Gluten-Free'
+    dietaryNotes: 'No Seafood or Pork'
   }
 ];
 
@@ -178,3 +178,4 @@ export const INITIAL_SYNC_CONFIG: SyncCalendarConfig = {
 };
 
 export const INITIAL_CHORES: ChoreItem[] = [];
+
