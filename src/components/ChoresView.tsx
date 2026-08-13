@@ -33,7 +33,8 @@ const areaColorMap: Record<ChoreArea, { bg: string; text: string; border: string
   'Living Room': { bg: 'bg-indigo-100 dark:bg-indigo-950/70', text: 'text-indigo-900 dark:text-indigo-200', border: 'border-indigo-300 dark:border-indigo-700' },
   'Dining Room': { bg: 'bg-teal-100 dark:bg-teal-950/70', text: 'text-teal-900 dark:text-teal-200', border: 'border-teal-300 dark:border-teal-700' },
   'Half Bathroom & Foyer': { bg: 'bg-cyan-100 dark:bg-cyan-950/70', text: 'text-cyan-900 dark:text-cyan-200', border: 'border-cyan-300 dark:border-cyan-700' },
-  'Laundry Room': { bg: 'bg-rose-100 dark:bg-rose-950/70', text: 'text-rose-900 dark:text-rose-200', border: 'border-rose-300 dark:border-rose-700' }
+  'Laundry Room': { bg: 'bg-rose-100 dark:bg-rose-950/70', text: 'text-rose-900 dark:text-rose-200', border: 'border-rose-300 dark:border-rose-700' },
+  'Staircase': { bg: 'bg-orange-100 dark:bg-orange-950/70', text: 'text-orange-900 dark:text-orange-200', border: 'border-orange-300 dark:border-orange-700' }
 };
 
 export const ChoresView: React.FC<ChoresViewProps> = ({
@@ -82,7 +83,8 @@ export const ChoresView: React.FC<ChoresViewProps> = ({
     'Living Room', 
     'Dining Room',
     'Half Bathroom & Foyer', 
-    'Laundry Room'
+    'Laundry Room',
+    'Staircase'
   ];
 
   return (
@@ -465,3 +467,4 @@ export const ChoresView: React.FC<ChoresViewProps> = ({
     </div>
   );
 };
+
