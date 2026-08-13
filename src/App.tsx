@@ -30,6 +30,8 @@ import {
   ChoreItem
 } from './types';
 import { storageService } from './services/storageService';
+import { celebrateChoreComplete, celebrateBigMilestone } from './utils/confetti';
+import { WEEKLY_CHORE_POOL } from './data/initialData';
 import { isSupabaseConfigured } from './services/supabaseClient';
 import {
   fetchPantryFromSupabase,
@@ -146,6 +148,9 @@ export default function App() {
 
   // --- CHORE HANDLERS ---
   const handleToggleChore = (id: string) => {
+    const target = chores.find(c => c.id === id);
+    const willBeCompleted = target ? !target.isCompleted : false;
+
     setChores(chores.map(c => {
       if (c.id === id) {
         const nextCompleted = !c.isCompleted;
@@ -157,6 +162,15 @@ export default function App() {
       }
       return c;
     }));
+
+    if (willBeCompleted) {
+      const remainingAfterThis = chores.filter(c => c.id !== id && !c.isCompleted).length;
+      if (remainingAfterThis === 0) {
+        celebrateBigMilestone();
+      } else {
+        celebrateChoreComplete();
+      }
+    }
   };
 
   const handleSaveChore = (partialChore: Partial<ChoreItem>) => {
@@ -211,6 +225,56 @@ export default function App() {
     } else {
       alert('All pending chores are already synced on your calendar!');
     }
+  };
+
+  const handleRandomizeWeeklyChores = () => {
+    if (members.length === 0) {
+      alert('Add a family member first so there\'s someone to assign chores to!');
+      return;
+    }
+
+    // Monday-through-Sunday range for "this week"
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sun ... 6 = Sat
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+
+    const weekDates: string[] = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      return d.toISOString().split('T')[0];
+    });
+    const weekStart = weekDates[0];
+    const weekEnd = weekDates[6];
+
+    // Clear out any previously-randomized chores for this same week so re-rolling doesn't duplicate
+    const poolTitles = new Set(WEEKLY_CHORE_POOL.map(p => p.title));
+    const keptChores = chores.filter(c => !(poolTitles.has(c.title) && c.dueDate >= weekStart && c.dueDate <= weekEnd));
+
+    // Shuffle family members so the rotation is different each time
+    const shuffledMembers = [...members].sort(() => Math.random() - 0.5);
+
+    const newChores: ChoreItem[] = WEEKLY_CHORE_POOL.map((preset, idx) => ({
+      id: `chore-rand-${Date.now()}-${idx}`,
+      title: preset.title,
+      area: preset.area,
+      assignedMemberId: shuffledMembers[idx % shuffledMembers.length].id,
+      frequency: 'Weekly',
+      dueDate: weekDates[idx % weekDates.length],
+      isCompleted: false,
+      priority: 'Medium',
+      points: preset.points
+    }));
+
+    setChores([...keptChores, ...newChores]);
+    setActiveTab('chores');
+
+    const summary = newChores
+      .map(c => `${members.find(m => m.id === c.assignedMemberId)?.name || 'Someone'} → ${c.area}`)
+      .join('\n');
+    alert(`🎲 This week's chores are randomized!\n\n${summary}`);
   };
 
   // --- CALENDAR HANDLERS ---
@@ -532,6 +596,7 @@ export default function App() {
             }}
             onDeleteChore={handleDeleteChore}
             onSyncChoresToCalendar={handleSyncChoresToCalendar}
+            onRandomizeWeeklyChores={handleRandomizeWeeklyChores}
           />
         )}
 
