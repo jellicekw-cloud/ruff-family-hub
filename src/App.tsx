@@ -34,7 +34,9 @@ import {
   fetchPantryFromSupabase,
   syncPantryToSupabase,
   fetchShoppingListFromSupabase,
-  syncShoppingListToSupabase
+  syncShoppingListToSupabase,
+  fetchFamilyMembersFromSupabase,
+  syncFamilyMembersToSupabase
 } from './services/supabaseSyncService';
 
 export default function App() {
@@ -71,28 +73,29 @@ export default function App() {
   const [preSelectedRecipe, setPreSelectedRecipe] = useState<Recipe | null>(null);
 
   // Auto Save to storage
-  useEffect(() => { storageService.saveMembers(members); }, [members]);
   useEffect(() => { storageService.saveEvents(events); }, [events]);
   useEffect(() => { storageService.saveChores(chores); }, [chores]);
   useEffect(() => { storageService.saveRecipes(recipes); }, [recipes]);
   useEffect(() => { storageService.saveSyncConfig(syncConfig); }, [syncConfig]);
 
-  // One-time load of Pantry & Shopping List from Supabase (falls back to whatever
-  // was already seeded from localStorage/initial data if Supabase isn't reachable).
+  // One-time load of Family Members, Pantry & Shopping List from Supabase (falls back to
+  // whatever was already seeded from localStorage/initial data if Supabase isn't reachable).
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
     let cancelled = false;
     (async () => {
-      const [cloudPantry, cloudShopping] = await Promise.all([
+      const [cloudMembers, cloudPantry, cloudShopping] = await Promise.all([
+        fetchFamilyMembersFromSupabase(),
         fetchPantryFromSupabase(),
         fetchShoppingListFromSupabase()
       ]);
       if (cancelled) return;
 
-      if (cloudPantry === null && cloudShopping === null) {
+      if (cloudMembers === null && cloudPantry === null && cloudShopping === null) {
         setCloudSyncError('Could not reach Supabase — using data saved on this device only.');
       } else {
+        if (cloudMembers !== null) setMembers(cloudMembers);
         if (cloudPantry !== null) setPantry(cloudPantry);
         if (cloudShopping !== null) setShoppingList(cloudShopping);
       }
@@ -102,6 +105,13 @@ export default function App() {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Family Members: same cache-then-sync pattern as Pantry/Shopping List below.
+  useEffect(() => {
+    storageService.saveMembers(members);
+    if (!isCloudDataLoaded) return;
+    syncFamilyMembersToSupabase(members).catch(err => console.error('Family members cloud sync failed:', err));
+  }, [members, isCloudDataLoaded]);
 
   // Pantry: always cache locally; push to Supabase once the initial cloud load has finished
   // (so we don't stomp on cloud data with local seed data while the fetch is still in flight).
@@ -632,3 +642,4 @@ export default function App() {
     </div>
   );
 }
+
