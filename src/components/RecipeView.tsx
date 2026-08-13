@@ -16,11 +16,9 @@ import {
   ArrowRight,
   BookOpen,
   X,
-  PlusCircle,
   Loader2
 } from 'lucide-react';
 import { Recipe, PantryItem } from '../types';
-import { AddOwnRecipeModal } from './AddOwnRecipeModal';
 
 interface RecipeViewProps {
   recipes: Recipe[];
@@ -49,7 +47,6 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [showAiModal, setShowAiModal] = useState<boolean>(false);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [showAddOwnModal, setShowAddOwnModal] = useState<boolean>(false);
 
   // Calculate pantry match for a recipe
   const getPantryMatchInfo = (recipe: Recipe) => {
@@ -158,23 +155,13 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setShowAddOwnModal(true)}
-            className="bg-white/15 hover:bg-white/25 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold shadow-sm transition-all flex items-center space-x-2 whitespace-nowrap backdrop-blur border border-white/20"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Add My Own Recipe</span>
-          </button>
-
-          <button
-            onClick={() => setShowAiModal(true)}
-            className="bg-white text-amber-900 hover:bg-amber-50 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold shadow-sm transition-all flex items-center space-x-2 whitespace-nowrap"
-          >
-            <Sparkles className="w-4 h-4 text-rose-500 fill-rose-500" />
-            <span>Find Recipes from Pantry (AI)</span>
-          </button>
-        </div>
+        <button
+          onClick={() => setShowAiModal(true)}
+          className="bg-white text-amber-900 hover:bg-amber-50 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold shadow-sm transition-all flex items-center space-x-2 whitespace-nowrap"
+        >
+          <Sparkles className="w-4 h-4 text-rose-500 fill-rose-500" />
+          <span>Find Recipes from Pantry (AI)</span>
+        </button>
       </div>
 
       {/* Filter & Search Bar */}
@@ -513,12 +500,6 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
           </div>
         </div>
       )}
-
-      <AddOwnRecipeModal
-        isOpen={showAddOwnModal}
-        onClose={() => setShowAddOwnModal(false)}
-        onSaveRecipe={(recipe) => onSaveNewAiRecipes([recipe])}
-      />
 
     </div>
   );
