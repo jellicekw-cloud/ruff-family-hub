@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
+import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { CalendarView } from './components/CalendarView';
 import { ChoresView } from './components/ChoresView';
 import { PantryView } from './components/PantryView';
@@ -41,6 +42,11 @@ import {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'calendar' | 'chores' | 'pantry' | 'recipes' | 'shopping' | 'members'>('calendar');
+
+  // House-wide scrolling announcements. Add/remove strings here to update the ticker banner.
+  const houseAnnouncements = [
+    'Do Not Leave Clothes in the Laundry Room!'
+  ];
 
   // Core Data States
   const [members, setMembers] = useState<FamilyMember[]>(() => storageService.getMembers());
@@ -452,6 +458,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans flex flex-col antialiased">
       
+      <AnnouncementBanner messages={houseAnnouncements} />
+
       {/* Header Bar */}
       <Navbar
         activeTab={activeTab}
