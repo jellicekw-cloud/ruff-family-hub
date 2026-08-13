@@ -1,4 +1,4 @@
-import { FamilyMember, CalendarEvent, PantryItem, Recipe, ShoppingItem, SyncCalendarConfig, ChoreItem, ChoreArea } from '../types';
+import { FamilyMember, CalendarEvent, PantryItem, Recipe, ShoppingItem, SyncCalendarConfig, ChoreItem, ChoreArea, Reward, RewardRedemption } from '../types';
 
 // Helper for relative date strings YYYY-MM-DD
 export function getRelativeDateString(offsetDays: number): string {
@@ -178,6 +178,20 @@ export const INITIAL_SYNC_CONFIG: SyncCalendarConfig = {
 };
 
 export const INITIAL_CHORES: ChoreItem[] = [];
+
+// Starter rewards catalog — geared toward adult family members, not kids.
+// Fully editable in the app; this is just a sensible default set.
+export const INITIAL_REWARDS: Reward[] = [
+  { id: 'rwd-1', title: 'Choose the Movie/Show for Family Night', pointsCost: 30, emoji: '🎬' },
+  { id: 'rwd-2', title: 'Sleep In Pass (skip your next morning chore)', pointsCost: 40, emoji: '😴' },
+  { id: 'rwd-3', title: 'Pick Family Dinner / Takeout Spot', pointsCost: 50, emoji: '🍕' },
+  { id: 'rwd-4', title: 'Skip a Chore This Week', pointsCost: 60, emoji: '🙅' },
+  { id: 'rwd-5', title: 'First Pick of Weekend Plans', pointsCost: 75, emoji: '🗓️' },
+  { id: 'rwd-6', title: '$10 Cash', pointsCost: 150, emoji: '💵' },
+  { id: 'rwd-7', title: '$20 Cash', pointsCost: 300, emoji: '💰' }
+];
+
+export const INITIAL_REDEMPTIONS: RewardRedemption[] = [];
 
 // Shared pool of standard household chore areas, used by both the Add Chore
 // quick-presets and the "Randomize This Week's Chores" feature.
