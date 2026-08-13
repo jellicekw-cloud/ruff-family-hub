@@ -200,6 +200,87 @@ app.post("/api/gemini/smart-meal-plan", async (req, res) => {
   }
 });
 
+// 4. Parse a user's own recipe from pasted text or an uploaded photo/file
+app.post("/api/gemini/recipe-parser", async (req, res) => {
+  try {
+    const { rawText, imageBase64, imageMimeType } = req.body;
+
+    if (!rawText && !imageBase64) {
+      return res.status(400).json({ success: false, error: "Provide rawText or imageBase64" });
+    }
+
+    const instruction = `
+    Extract a single recipe from the provided ${imageBase64 ? "photo" : "text"} (could be a handwritten card, a screenshot, a pasted note, or a copied web recipe).
+    Return one structured recipe with a title, short description, prep/cook time in minutes, servings, category (e.g. Mexican, Italian, Breakfast, Vegetarian), difficulty (Easy/Medium/Hard), helpful tags, estimated calories per serving, a full ingredient list (name + amount, e.g. "2 cups" or "1 lb"), and clear numbered step-by-step instructions.
+    If information is missing or illegible, make a reasonable, realistic estimate rather than leaving fields blank.
+    `;
+
+    const contentParts: any[] = [{ text: instruction }];
+    if (imageBase64) {
+      contentParts.push({
+        inlineData: {
+          data: imageBase64,
+          mimeType: imageMimeType || "image/jpeg"
+        }
+      });
+    } else {
+      contentParts.push({ text: `Recipe text:\n"""\n${rawText}\n"""` });
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: [{ role: "user", parts: contentParts }],
+      config: {
+        systemInstruction: "You extract real, usable recipes into precise structured JSON matching the requested schema exactly. Never include markdown or commentary outside the JSON.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            prepTime: { type: Type.INTEGER, description: "Prep time in minutes" },
+            cookTime: { type: Type.INTEGER, description: "Cook time in minutes" },
+            servings: { type: Type.INTEGER },
+            category: { type: Type.STRING },
+            difficulty: { type: Type.STRING, description: "Easy, Medium, or Hard" },
+            tags: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            },
+            calories: { type: Type.INTEGER },
+            ingredients: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  amount: { type: Type.STRING }
+                },
+                required: ["name", "amount"]
+              }
+            },
+            instructions: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            }
+          },
+          required: ["title", "description", "prepTime", "cookTime", "servings", "category", "difficulty", "ingredients", "instructions"]
+        }
+      }
+    });
+
+    const jsonText = response.text || "{}";
+    const recipe = JSON.parse(jsonText);
+    return res.json({ success: true, recipe });
+  } catch (error: any) {
+    console.error("Error in /api/gemini/recipe-parser:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Failed to parse recipe"
+    });
+  }
+});
+
 // Serve frontend in production or Vite middleware in dev
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
@@ -222,3 +303,4 @@ async function startServer() {
 }
 
 startServer();
+
