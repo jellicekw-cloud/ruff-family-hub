@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, Sparkles, Home, User, Calendar as CalendarIcon, Zap } from 'lucide-react';
 import { ChoreItem, FamilyMember, ChoreArea, ChoreFrequency } from '../types';
+import { WEEKLY_CHORE_POOL } from '../data/initialData';
 
 interface AddChoreModalProps {
   isOpen: boolean;
@@ -72,14 +73,7 @@ export const AddChoreModal: React.FC<AddChoreModalProps> = ({
     onClose();
   };
 
-  const presetChores = [
-    { title: 'Sanitize Kitchen Countertops', area: 'Kitchen' as ChoreArea, points: 15 },
-    { title: 'Vacuum & Mop Living Room', area: 'Living Room' as ChoreArea, points: 25 },
-    { title: 'Clear & Wipe Dining Table', area: 'Dining Room' as ChoreArea, points: 15 },
-    { title: 'Scrub Sink, Mirror & Sweep Foyer', area: 'Half Bathroom & Foyer' as ChoreArea, points: 20 },
-    { title: 'Wash, Fold & Organize Laundry', area: 'Laundry Room' as ChoreArea, points: 20 },
-    { title: 'Vacuum & Wipe Down Staircase', area: 'Staircase' as ChoreArea, points: 15 }
-  ];
+  const presetChores = WEEKLY_CHORE_POOL;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
