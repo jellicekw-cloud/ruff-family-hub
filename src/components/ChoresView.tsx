@@ -15,9 +15,12 @@ import {
   RotateCw,
   Shuffle,
   Award,
-  AlertCircle
+  AlertCircle,
+  ListChecks,
+  ChevronDown
 } from 'lucide-react';
 import { ChoreItem, FamilyMember, ChoreArea, ChoreFrequency } from '../types';
+import { AREA_CHECKLISTS } from '../data/initialData';
 
 interface ChoresViewProps {
   chores: ChoreItem[];
@@ -53,6 +56,7 @@ export const ChoresView: React.FC<ChoresViewProps> = ({
   const [selectedMemberId, setSelectedMemberId] = useState<string | 'ALL'>('ALL');
   const [selectedFrequency, setSelectedFrequency] = useState<ChoreFrequency | 'ALL'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'pending' | 'completed' | 'all'>('pending');
+  const [expandedChecklistId, setExpandedChecklistId] = useState<string | null>(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -429,6 +433,31 @@ export const ChoresView: React.FC<ChoresViewProps> = ({
                     </div>
 
                   </div>
+
+                  {/* What counts as done? — area checklist */}
+                  {AREA_CHECKLISTS[chore.area] && (
+                    <div className="mt-2">
+                      <button
+                        onClick={() => setExpandedChecklistId(expandedChecklistId === chore.id ? null : chore.id)}
+                        className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 hover:text-cyan-600 dark:text-slate-400 dark:hover:text-cyan-400 transition-colors"
+                      >
+                        <ListChecks className="w-3.5 h-3.5" />
+                        <span>What counts as done?</span>
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedChecklistId === chore.id ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {expandedChecklistId === chore.id && (
+                        <ul className="mt-2 space-y-1 pl-1">
+                          {AREA_CHECKLISTS[chore.area].map((task, i) => (
+                            <li key={i} className="flex items-start gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                              <span className="text-cyan-500 mt-0.5 flex-shrink-0">•</span>
+                              <span>{task}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
 
                   {/* Footer Row: Assignee, Due Date, Points & Controls */}
                   <div className="flex items-center justify-between pt-4 mt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
