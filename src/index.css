@@ -21,3 +21,12 @@ body, html, input, select, textarea, button, form, label {
   animation-play-state: paused;
 }
 
+@keyframes announcement-flash {
+  0%, 100% { color: #ffffff; }
+  50% { color: #ef4444; }
+}
+
+.announcement-flash {
+  animation: announcement-flash 1s ease-in-out infinite;
+}
+
