@@ -58,6 +58,7 @@ export interface PantryItem {
   expiryDate?: string;
   notes?: string;
   updatedAt: string;
+  barcode?: string; // UPC/EAN — lets a future scan of the same item skip manual entry
 }
 
 export interface RecipeIngredient {
