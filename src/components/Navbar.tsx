@@ -227,10 +227,10 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Mobile Tab Bar */}
-      <div className="md:hidden flex items-center justify-around border-t border-slate-200 dark:border-slate-800 py-2 bg-slate-50 dark:bg-slate-900">
+      <div className="md:hidden flex items-center gap-1 overflow-x-auto border-t border-slate-200 dark:border-slate-800 py-2 px-1 bg-slate-50 dark:bg-slate-900">
         <button
           onClick={() => setActiveTab('calendar')}
-          className={`flex flex-col items-center space-y-0.5 text-xs font-medium ${
+          className={`flex flex-col items-center space-y-0.5 text-xs font-medium flex-shrink-0 px-2.5 ${
             activeTab === 'calendar' ? 'text-violet-600 dark:text-violet-400 font-bold' : 'text-slate-500'
           }`}
         >
@@ -239,7 +239,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('chores')}
-          className={`flex flex-col items-center space-y-0.5 text-xs font-medium ${
+          className={`flex flex-col items-center space-y-0.5 text-xs font-medium flex-shrink-0 px-2.5 ${
             activeTab === 'chores' ? 'text-cyan-600 dark:text-cyan-400 font-bold' : 'text-slate-500'
           }`}
         >
@@ -248,7 +248,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('pantry')}
-          className={`flex flex-col items-center space-y-0.5 text-xs font-medium ${
+          className={`flex flex-col items-center space-y-0.5 text-xs font-medium flex-shrink-0 px-2.5 ${
             activeTab === 'pantry' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-500'
           }`}
         >
@@ -257,7 +257,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('recipes')}
-          className={`flex flex-col items-center space-y-0.5 text-xs font-medium ${
+          className={`flex flex-col items-center space-y-0.5 text-xs font-medium flex-shrink-0 px-2.5 ${
             activeTab === 'recipes' ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-500'
           }`}
         >
@@ -266,7 +266,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('shopping')}
-          className={`flex flex-col items-center space-y-0.5 text-xs font-medium ${
+          className={`flex flex-col items-center space-y-0.5 text-xs font-medium flex-shrink-0 px-2.5 ${
             activeTab === 'shopping' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-500'
           }`}
         >
@@ -275,17 +275,26 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('rewards')}
-          className={`relative flex flex-col items-center space-y-0.5 text-xs font-medium ${
+          className={`relative flex flex-col items-center space-y-0.5 text-xs font-medium flex-shrink-0 px-2.5 ${
             activeTab === 'rewards' ? 'text-fuchsia-600 dark:text-fuchsia-400 font-bold' : 'text-slate-500'
           }`}
         >
           <Gift className="w-5 h-5" />
           <span>Rewards</span>
           {pendingRewardsCount > 0 && (
-            <span className="absolute -top-1 -right-2 w-4 h-4 flex items-center justify-center text-[9px] bg-fuchsia-600 text-white rounded-full font-bold">
+            <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[9px] bg-fuchsia-600 text-white rounded-full font-bold">
               {pendingRewardsCount}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setActiveTab('members')}
+          className={`flex flex-col items-center space-y-0.5 text-xs font-medium flex-shrink-0 px-2.5 ${
+            activeTab === 'members' ? 'text-purple-600 dark:text-purple-400 font-bold' : 'text-slate-500'
+          }`}
+        >
+          <Users className="w-5 h-5" />
+          <span>Family</span>
         </button>
       </div>
     </header>
