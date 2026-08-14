@@ -26,6 +26,7 @@ interface NavbarProps {
   shoppingPendingCount: number;
   todayEventsCount: number;
   pendingChoresCount?: number;
+  pendingRewardsCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -40,6 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   shoppingPendingCount,
   todayEventsCount,
   pendingChoresCount = 0,
+  pendingRewardsCount = 0,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 shadow-xs">
@@ -157,6 +159,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Gift className="w-4 h-4 text-fuchsia-600" />
               <span>Rewards</span>
+              {pendingRewardsCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 text-xs bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-200 rounded-full font-bold">
+                  {pendingRewardsCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -268,12 +275,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('rewards')}
-          className={`flex flex-col items-center space-y-0.5 text-xs font-medium ${
+          className={`relative flex flex-col items-center space-y-0.5 text-xs font-medium ${
             activeTab === 'rewards' ? 'text-fuchsia-600 dark:text-fuchsia-400 font-bold' : 'text-slate-500'
           }`}
         >
           <Gift className="w-5 h-5" />
           <span>Rewards</span>
+          {pendingRewardsCount > 0 && (
+            <span className="absolute -top-1 -right-2 w-4 h-4 flex items-center justify-center text-[9px] bg-fuchsia-600 text-white rounded-full font-bold">
+              {pendingRewardsCount}
+            </span>
+          )}
         </button>
       </div>
     </header>
