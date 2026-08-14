@@ -136,5 +136,7 @@ export interface RewardRedemption {
   rewardTitle: string; // snapshot in case the reward is edited/deleted later
   pointsCost: number; // snapshot for the same reason
   redeemedAt: string; // ISO date
+  status: 'pending' | 'fulfilled'; // 'pending' until the physical reward is actually handed over
+  fulfilledAt?: string;
 }
 
