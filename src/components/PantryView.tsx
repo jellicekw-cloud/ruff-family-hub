@@ -15,9 +15,11 @@ import {
   Calendar, 
   RefreshCw,
   PlusCircle,
-  MinusCircle
+  MinusCircle,
+  ScanBarcode
 } from 'lucide-react';
 import { PantryItem, CategoryType } from '../types';
+import { BarcodeScannerModal } from './BarcodeScannerModal';
 
 interface PantryViewProps {
   pantry: PantryItem[];
@@ -28,6 +30,7 @@ interface PantryViewProps {
   onUpdateQuantity: (id: string, delta: number) => void;
   onSyncToShoppingList: (items: PantryItem[]) => void;
   onOpenSmartImport: () => void;
+  onSaveScannedItem: (item: Partial<PantryItem>) => void;
 }
 
 export const PantryView: React.FC<PantryViewProps> = ({
@@ -39,10 +42,12 @@ export const PantryView: React.FC<PantryViewProps> = ({
   onUpdateQuantity,
   onSyncToShoppingList,
   onOpenSmartImport,
+  onSaveScannedItem,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showScanner, setShowScanner] = useState(false);
 
   const categories: CategoryType[] = [
     'Produce', 
@@ -144,6 +149,14 @@ export const PantryView: React.FC<PantryViewProps> = ({
               <span>Clear All</span>
             </button>
           )}
+
+          <button
+            onClick={() => setShowScanner(true)}
+            className="bg-cyan-800/80 hover:bg-cyan-800 text-white border border-cyan-400/40 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-1.5"
+          >
+            <ScanBarcode className="w-4 h-4 text-cyan-200" />
+            <span>Scan Barcode</span>
+          </button>
 
           <button
             onClick={onOpenSmartImport}
@@ -342,6 +355,14 @@ export const PantryView: React.FC<PantryViewProps> = ({
         )}
       </div>
 
+      <BarcodeScannerModal
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onAddItem={onSaveScannedItem}
+        existingPantry={pantry}
+      />
+
     </div>
   );
 };
+
