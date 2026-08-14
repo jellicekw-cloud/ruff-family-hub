@@ -93,11 +93,13 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
       .filter(p => p.status === 'in_stock' || p.status === 'running_low')
       .map(p => p.name);
 
+    const recipeIngredients = recipe.ingredients || [];
+
     let matchCount = 0;
     const missing: { name: string; amount: string }[] = [];
 
-    recipe.ingredients.forEach(ing => {
-      const hasItem = inStockNames.some(pName => namesMatch(pName, ing.name));
+    recipeIngredients.forEach(ing => {
+      const hasItem = inStockNames.some(pName => namesMatch(pName, ing.name || ''));
       if (hasItem) {
         matchCount++;
       } else {
@@ -105,7 +107,7 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
       }
     });
 
-    const total = recipe.ingredients.length;
+    const total = recipeIngredients.length;
     const matchPercentage = total > 0 ? Math.round((matchCount / total) * 100) : 100;
 
     return {
@@ -122,14 +124,15 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
       const matchesCategory =
         selectedCategory === 'ALL' ||
         (selectedCategory === 'AI Generated' ? r.source === 'AI Generated' : r.category === selectedCategory);
-      const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            r.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      const title = r.title || '';
+      const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            (r.tags || []).some(t => (t || '').toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesCategory && matchesSearch;
     })
     // Highest pantry match first; ties broken alphabetically so the order stays stable
     .sort((a, b) => {
       const diff = getPantryMatchInfo(b).matchPercentage - getPantryMatchInfo(a).matchPercentage;
-      return diff !== 0 ? diff : a.title.localeCompare(b.title);
+      return diff !== 0 ? diff : (a.title || '').localeCompare(b.title || '');
     });
 
   // Call backend API `/api/gemini/recipe-finder`
@@ -308,7 +311,7 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-1 pt-1">
-                  {recipe.tags.map(tag => (
+                  {(recipe.tags || []).map(tag => (
                     <span key={tag} className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-medium">
                       #{tag}
                     </span>
@@ -415,7 +418,7 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
             <div className="space-y-3">
               <h3 className="font-extrabold text-slate-900 dark:text-white text-base">Ingredients</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {selectedRecipe.ingredients.map((ing, idx) => (
+                {(selectedRecipe.ingredients || []).map((ing, idx) => (
                   <div key={idx} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between text-xs">
                     <span className="font-bold text-slate-800 dark:text-slate-200">{ing.name}</span>
                     <span className="text-slate-500 font-medium">{ing.amount}</span>
@@ -428,7 +431,7 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
             <div className="space-y-3">
               <h3 className="font-extrabold text-slate-900 dark:text-white text-base">Step-by-Step Instructions</h3>
               <ol className="space-y-2.5">
-                {selectedRecipe.instructions.map((step, idx) => (
+                {(selectedRecipe.instructions || []).map((step, idx) => (
                   <li key={idx} className="flex items-start space-x-3 text-xs text-slate-700 dark:text-slate-300">
                     <span className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-black text-xs flex items-center justify-center flex-shrink-0">
                       {idx + 1}
