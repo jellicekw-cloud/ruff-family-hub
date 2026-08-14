@@ -42,7 +42,17 @@ import {
   fetchShoppingListFromSupabase,
   syncShoppingListToSupabase,
   fetchFamilyMembersFromSupabase,
-  syncFamilyMembersToSupabase
+  syncFamilyMembersToSupabase,
+  fetchEventsFromSupabase,
+  syncEventsToSupabase,
+  fetchChoresFromSupabase,
+  syncChoresToSupabase,
+  fetchRecipesFromSupabase,
+  syncRecipesToSupabase,
+  fetchRewardsFromSupabase,
+  syncRewardsToSupabase,
+  fetchRedemptionsFromSupabase,
+  syncRedemptionsToSupabase
 } from './services/supabaseSyncService';
 
 export default function App() {
@@ -86,36 +96,47 @@ export default function App() {
   const [preSelectedRecipe, setPreSelectedRecipe] = useState<Recipe | null>(null);
 
   // Auto Save to storage
-  useEffect(() => { storageService.saveEvents(events); }, [events]);
-  useEffect(() => { storageService.saveChores(chores); }, [chores]);
-  useEffect(() => { storageService.saveRewards(rewards); }, [rewards]);
-  useEffect(() => { storageService.saveRedemptions(redemptions); }, [redemptions]);
-  useEffect(() => { storageService.saveRecipes(recipes); }, [recipes]);
   useEffect(() => { storageService.saveSyncConfig(syncConfig); }, [syncConfig]);
 
-  // One-time load of Family Members, Pantry & Shopping List from Supabase (falls back to
-  // whatever was already seeded from localStorage/initial data if Supabase isn't reachable).
+  // One-time load of everything from Supabase (falls back to whatever was already
+  // seeded from localStorage/initial data if Supabase isn't reachable).
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
     let cancelled = false;
     (async () => {
-      const [cloudMembers, cloudPantry, cloudShopping] = await Promise.all([
+      const [
+        cloudMembers, cloudPantry, cloudShopping,
+        cloudEvents, cloudChores, cloudRecipes, cloudRewards, cloudRedemptions
+      ] = await Promise.all([
         fetchFamilyMembersFromSupabase(),
         fetchPantryFromSupabase(),
-        fetchShoppingListFromSupabase()
+        fetchShoppingListFromSupabase(),
+        fetchEventsFromSupabase(),
+        fetchChoresFromSupabase(),
+        fetchRecipesFromSupabase(),
+        fetchRewardsFromSupabase(),
+        fetchRedemptionsFromSupabase()
       ]);
       if (cancelled) return;
 
-      if (cloudMembers === null && cloudPantry === null && cloudShopping === null) {
+      const allFailed = [cloudMembers, cloudPantry, cloudShopping, cloudEvents, cloudChores, cloudRecipes, cloudRewards, cloudRedemptions]
+        .every(r => r === null);
+
+      if (allFailed) {
         setCloudSyncError('Could not reach Supabase — using data saved on this device only.');
       } else {
-        // Family Members: only adopt cloud data once it's actually been seeded.
-        // An empty cloud table (first-ever sync) means "not seeded yet," not "delete everyone" —
-        // in that case we keep local data as-is and let the write-sync effect push it up instead.
+        // Only adopt cloud data once it's actually been seeded. An empty cloud table
+        // (first-ever sync) means "not seeded yet," not "delete everything" — in that
+        // case we keep local data as-is and let the write-sync effects push it up instead.
         if (cloudMembers !== null && cloudMembers.length > 0) setMembers(cloudMembers);
         if (cloudPantry !== null) setPantry(cloudPantry);
         if (cloudShopping !== null) setShoppingList(cloudShopping);
+        if (cloudEvents !== null && cloudEvents.length > 0) setEvents(cloudEvents);
+        if (cloudChores !== null && cloudChores.length > 0) setChores(cloudChores);
+        if (cloudRecipes !== null && cloudRecipes.length > 0) setRecipes(cloudRecipes);
+        if (cloudRewards !== null && cloudRewards.length > 0) setRewards(cloudRewards);
+        if (cloudRedemptions !== null && cloudRedemptions.length > 0) setRedemptions(cloudRedemptions);
       }
       setIsCloudDataLoaded(true);
     })();
@@ -124,27 +145,61 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Family Members: same cache-then-sync pattern as Pantry/Shopping List below.
+  // Family Members: cache locally always; push to Supabase once the initial cloud load has finished.
   useEffect(() => {
     storageService.saveMembers(members);
     if (!isCloudDataLoaded) return;
     syncFamilyMembersToSupabase(members).catch(err => console.error('Family members cloud sync failed:', err));
   }, [members, isCloudDataLoaded]);
 
-  // Pantry: always cache locally; push to Supabase once the initial cloud load has finished
-  // (so we don't stomp on cloud data with local seed data while the fetch is still in flight).
+  // Pantry: same cache-then-sync pattern.
   useEffect(() => {
     storageService.savePantry(pantry);
     if (!isCloudDataLoaded) return;
     syncPantryToSupabase(pantry).catch(err => console.error('Pantry cloud sync failed:', err));
   }, [pantry, isCloudDataLoaded]);
 
-  // Shopping List: same pattern as Pantry above.
+  // Shopping List: same pattern.
   useEffect(() => {
     storageService.saveShoppingList(shoppingList);
     if (!isCloudDataLoaded) return;
     syncShoppingListToSupabase(shoppingList).catch(err => console.error('Shopping list cloud sync failed:', err));
   }, [shoppingList, isCloudDataLoaded]);
+
+  // Calendar Events: same pattern.
+  useEffect(() => {
+    storageService.saveEvents(events);
+    if (!isCloudDataLoaded) return;
+    syncEventsToSupabase(events).catch(err => console.error('Events cloud sync failed:', err));
+  }, [events, isCloudDataLoaded]);
+
+  // Chores: same pattern.
+  useEffect(() => {
+    storageService.saveChores(chores);
+    if (!isCloudDataLoaded) return;
+    syncChoresToSupabase(chores).catch(err => console.error('Chores cloud sync failed:', err));
+  }, [chores, isCloudDataLoaded]);
+
+  // Recipes: same pattern.
+  useEffect(() => {
+    storageService.saveRecipes(recipes);
+    if (!isCloudDataLoaded) return;
+    syncRecipesToSupabase(recipes).catch(err => console.error('Recipes cloud sync failed:', err));
+  }, [recipes, isCloudDataLoaded]);
+
+  // Rewards catalog: same pattern.
+  useEffect(() => {
+    storageService.saveRewards(rewards);
+    if (!isCloudDataLoaded) return;
+    syncRewardsToSupabase(rewards).catch(err => console.error('Rewards cloud sync failed:', err));
+  }, [rewards, isCloudDataLoaded]);
+
+  // Reward Redemptions: same pattern.
+  useEffect(() => {
+    storageService.saveRedemptions(redemptions);
+    if (!isCloudDataLoaded) return;
+    syncRedemptionsToSupabase(redemptions).catch(err => console.error('Redemptions cloud sync failed:', err));
+  }, [redemptions, isCloudDataLoaded]);
 
   // Derived counts for navbar badges
   const lowPantryCount = pantry.filter(i => i.status === 'running_low' || i.status === 'out_of_stock').length;
@@ -407,6 +462,8 @@ export default function App() {
         title: partialEvent.title || 'Family Event',
         memberIds: partialEvent.memberIds || [members[0]?.id || 'mem-1'],
         date: partialEvent.date || todayStr,
+        endDate: partialEvent.endDate,
+        isAway: partialEvent.isAway,
         startTime: partialEvent.startTime || '18:00',
         endTime: partialEvent.endTime || '19:00',
         category: partialEvent.category || 'general',
@@ -418,6 +475,29 @@ export default function App() {
         recipeTitle: partialEvent.recipeTitle
       };
       setEvents([...events, newEvt]);
+
+      // Broadcast to everyone who's enabled notifications — fire-and-forget,
+      // shouldn't block the UI or fail loudly if nobody's subscribed yet.
+      const memberNames = newEvt.memberIds
+        .map(id => members.find(m => m.id === id)?.name)
+        .filter(Boolean)
+        .join(', ');
+      const eventDateLabel = new Date(newEvt.date + 'T00:00:00').toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
+
+      fetch('/api/send-event-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newEvt.title,
+          dateLabel: eventDateLabel,
+          memberNames: memberNames || 'the family',
+          category: newEvt.category
+        })
+      }).catch(err => console.error('Event notification push failed:', err));
     }
   };
 
