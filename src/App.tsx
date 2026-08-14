@@ -519,7 +519,8 @@ export default function App() {
         status: partialItem.status || 'in_stock',
         expiryDate: partialItem.expiryDate,
         notes: partialItem.notes,
-        updatedAt: new Date().toISOString().split('T')[0]
+        updatedAt: new Date().toISOString().split('T')[0],
+        barcode: partialItem.barcode
       };
       setPantry([...pantry, newItem]);
     }
@@ -817,6 +818,7 @@ export default function App() {
             onUpdateQuantity={handleUpdatePantryQuantity}
             onSyncToShoppingList={handleSyncLowPantryToShopping}
             onOpenSmartImport={() => setShowSmartImportModal(true)}
+            onSaveScannedItem={handleSavePantryItem}
           />
         )}
 
