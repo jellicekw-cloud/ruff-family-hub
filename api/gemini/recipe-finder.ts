@@ -2,6 +2,32 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Type } from "@google/genai";
 import { ai } from "../_lib/gemini.js";
 
+// Common main-protein keywords. If a recipe's ingredient list contains one of these
+// and the user's actual pantry doesn't contain that same protein (or a close relative),
+// the recipe gets rejected — regardless of what the AI claims. This is a hard guardrail
+// on top of the prompt instructions, since LLMs don't always follow soft rules reliably.
+const PROTEIN_KEYWORDS = [
+  'chicken', 'beef', 'pork', 'salmon', 'fish', 'shrimp', 'prawn', 'turkey',
+  'lamb', 'tofu', 'bacon', 'sausage', 'ham', 'tilapia', 'cod', 'tuna',
+  'crab', 'lobster', 'duck', 'steak', 'ground beef', 'venison'
+];
+
+function pantryHasProtein(pantryListLower: string, protein: string): boolean {
+  return pantryListLower.includes(protein);
+}
+
+function recipeUsesUnavailableProtein(recipeIngredients: any[], pantryListLower: string): string | null {
+  for (const ing of recipeIngredients) {
+    const nameLower = (ing.name || '').toLowerCase();
+    for (const protein of PROTEIN_KEYWORDS) {
+      if (nameLower.includes(protein) && !pantryHasProtein(pantryListLower, protein)) {
+        return protein;
+      }
+    }
+  }
+  return null;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
@@ -13,6 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const availableList = Array.isArray(ingredients) && ingredients.length > 0
       ? ingredients.join(", ")
       : "pasta, tomatoes, garlic, olive oil, eggs, cheese, chicken, rice, onions, butter";
+    const availableListLower = availableList.toLowerCase();
 
     const promptText = `
     You are a professional chef and family meal planner helping a family cook with what they already have, to reduce food waste and avoid unnecessary grocery trips.
@@ -79,7 +106,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     const jsonText = response.text || "[]";
-    const recipes = JSON.parse(jsonText);
+    const rawRecipes = JSON.parse(jsonText);
+
+    // Hard guardrail: reject any recipe that snuck in a protein not actually in the pantry,
+    // regardless of what the prompt asked for. Better to return fewer, correct recipes
+    // than 3 recipes where one doesn't belong.
+    const recipes = (Array.isArray(rawRecipes) ? rawRecipes : []).filter((recipe: any) => {
+      const badProtein = recipeUsesUnavailableProtein(recipe.ingredients || [], availableListLower);
+      if (badProtein) {
+        console.warn(`Rejected AI recipe "${recipe.title}" — used "${badProtein}" which isn't in the pantry`);
+        return false;
+      }
+      return true;
+    });
+
     return res.json({ success: true, recipes });
   } catch (error: any) {
     console.error("Error in /api/gemini/recipe-finder:", error);
