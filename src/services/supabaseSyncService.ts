@@ -168,6 +168,7 @@ interface FamilyMemberRow {
   avatar_icon: string | null;
   dietary_notes: string | null;
   sort_order: number;
+  exclude_from_chores: boolean;
 }
 
 const memberToRow = (m: FamilyMember, sortOrder: number): FamilyMemberRow => ({
@@ -180,6 +181,7 @@ const memberToRow = (m: FamilyMember, sortOrder: number): FamilyMemberRow => ({
   avatar_icon: m.avatarIcon || null,
   dietary_notes: m.dietaryNotes || null,
   sort_order: sortOrder,
+  exclude_from_chores: !!m.excludeFromChores,
 });
 
 const rowToMember = (r: FamilyMemberRow): FamilyMember => ({
@@ -191,6 +193,7 @@ const rowToMember = (r: FamilyMemberRow): FamilyMember => ({
   badgeClass: r.badge_class,
   avatarIcon: r.avatar_icon || undefined,
   dietaryNotes: r.dietary_notes || undefined,
+  excludeFromChores: r.exclude_from_chores || undefined,
 });
 
 export async function fetchFamilyMembersFromSupabase(): Promise<FamilyMember[] | null> {
