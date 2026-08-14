@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { 
   Package, 
   Plus, 
@@ -19,7 +19,14 @@ import {
   ScanBarcode
 } from 'lucide-react';
 import { PantryItem, CategoryType } from '../types';
-import { BarcodeScannerModal } from './BarcodeScannerModal';
+
+// Lazy-loaded: this pulls in a large barcode-decoding library (html5-qrcode/ZXing).
+// Loading it only when the scanner is actually opened — instead of on every app
+// load — keeps that library's startup code from being able to affect anything
+// else in the app, and keeps the main bundle smaller.
+const BarcodeScannerModal = lazy(() =>
+  import('./BarcodeScannerModal').then(m => ({ default: m.BarcodeScannerModal }))
+);
 
 interface PantryViewProps {
   pantry: PantryItem[];
@@ -355,12 +362,20 @@ export const PantryView: React.FC<PantryViewProps> = ({
         )}
       </div>
 
-      <BarcodeScannerModal
-        isOpen={showScanner}
-        onClose={() => setShowScanner(false)}
-        onAddItem={onSaveScannedItem}
-        existingPantry={pantry}
-      />
+      {showScanner && (
+        <Suspense fallback={
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+            <div className="text-white text-sm font-bold">Loading scanner...</div>
+          </div>
+        }>
+          <BarcodeScannerModal
+            isOpen={showScanner}
+            onClose={() => setShowScanner(false)}
+            onAddItem={onSaveScannedItem}
+            existingPantry={pantry}
+          />
+        </Suspense>
+      )}
 
     </div>
   );
