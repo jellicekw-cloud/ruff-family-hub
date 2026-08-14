@@ -310,13 +310,35 @@ export default function App() {
       rewardId: reward.id,
       rewardTitle: reward.title,
       pointsCost: reward.pointsCost,
-      redeemedAt: new Date().toISOString()
+      redeemedAt: new Date().toISOString(),
+      status: 'pending'
     };
     setRedemptions([...redemptions, newRedemption]);
     celebrateChoreComplete();
 
     const member = members.find(m => m.id === memberId);
-    alert(`${reward.emoji || '🎁'} ${member?.name || 'You'} redeemed "${reward.title}" for ${reward.pointsCost} points!`);
+
+    // Fire-and-forget: don't let a failed email block the redemption itself
+    fetch('/api/notify-redemption', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        memberName: member?.name || 'Someone',
+        rewardTitle: reward.title,
+        pointsCost: reward.pointsCost,
+        emoji: reward.emoji
+      })
+    }).catch(err => console.error('Redemption notification email failed:', err));
+
+    alert(`${reward.emoji || '🎁'} ${member?.name || 'You'} redeemed "${reward.title}" for ${reward.pointsCost} points!\n\nThis is now pending — check the Rewards tab to mark it as given once handed over.`);
+  };
+
+  const handleFulfillRedemption = (redemptionId: string) => {
+    setRedemptions(redemptions.map(r =>
+      r.id === redemptionId
+        ? { ...r, status: 'fulfilled' as const, fulfilledAt: new Date().toISOString() }
+        : r
+    ));
   };
 
   const handleAddReward = (reward: Reward) => {
@@ -597,6 +619,7 @@ export default function App() {
         shoppingPendingCount={shoppingPendingCount}
         todayEventsCount={todayEventsCount}
         pendingChoresCount={pendingChoresCount}
+        pendingRewardsCount={redemptions.filter(r => r.status === 'pending').length}
       />
 
       {cloudSyncError && (
@@ -703,6 +726,7 @@ export default function App() {
             onRedeem={handleRedeemReward}
             onAddReward={handleAddReward}
             onDeleteReward={handleDeleteReward}
+            onFulfillRedemption={handleFulfillRedemption}
           />
         )}
 
