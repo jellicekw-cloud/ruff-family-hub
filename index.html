@@ -21,6 +21,41 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Last-resort safety net: catches ANY error anywhere — including ones our
+      // own React app can never see (a script failing to load, an error before
+      // React mounts, an unhandled promise rejection). This runs as plain
+      // JavaScript before anything else, so it works even if the whole app
+      // bundle fails. If the #root element is still empty a moment after an
+      // error, something failed to render — show a real recovery screen
+      // instead of leaving the page blank.
+      (function () {
+        var shown = false;
+        function showFallback(detail) {
+          if (shown) return;
+          var root = document.getElementById('root');
+          if (!root || root.children.length > 0) return; // app is actually rendering fine, leave it alone
+          shown = true;
+          root.innerHTML =
+            '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:sans-serif;background:#0f172a;color:white;">' +
+            '<div style="font-size:48px;margin-bottom:16px;">🏠</div>' +
+            '<h1 style="font-size:20px;font-weight:800;margin-bottom:8px;">Something went wrong</h1>' +
+            '<p style="font-size:14px;color:#94a3b8;margin-bottom:20px;max-width:400px;">The app hit an unexpected error and couldn\'t load. Your data is safe on this device and in the cloud. Reloading usually fixes this.</p>' +
+            '<button onclick="window.location.reload()" style="padding:10px 24px;background:#f59e0b;color:#0f172a;font-weight:800;border-radius:12px;border:none;cursor:pointer;font-size:14px;">Reload App</button>' +
+            '<p style="font-size:11px;color:#475569;margin-top:24px;max-width:400px;word-break:break-word;">' + (detail || '') + '</p>' +
+            '</div>';
+        }
+        window.addEventListener('error', function (e) {
+          setTimeout(function () { showFallback(e.message); }, 100);
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          setTimeout(function () { showFallback(e.reason && e.reason.message ? e.reason.message : String(e.reason)); }, 100);
+        });
+        // Also catch the case where the app just never renders anything at
+        // all within a few seconds, even without a caught error event.
+        setTimeout(function () { showFallback('App did not load in time.'); }, 8000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
