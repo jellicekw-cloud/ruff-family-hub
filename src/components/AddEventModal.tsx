@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar as CalendarIcon, Clock, MapPin, Utensils, Users, Check } from 'lucide-react';
+import { X, Calendar as CalendarIcon, Clock, MapPin, Utensils, Users, Check, Plane } from 'lucide-react';
 import { CalendarEvent, FamilyMember, EventCategory, Recipe } from '../types';
 
 interface AddEventModalProps {
@@ -24,6 +24,9 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
   const [title, setTitle] = useState('');
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [date, setDate] = useState(defaultDate || new Date().toISOString().split('T')[0]);
+  const [isMultiDay, setIsMultiDay] = useState(false);
+  const [endDate, setEndDate] = useState(defaultDate || new Date().toISOString().split('T')[0]);
+  const [isAway, setIsAway] = useState(false);
   const [startTime, setStartTime] = useState('18:00');
   const [endTime, setEndTime] = useState('19:00');
   const [category, setCategory] = useState<EventCategory>('general');
@@ -37,6 +40,10 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
       setTitle(eventToEdit.title);
       setSelectedMemberIds(eventToEdit.memberIds || []);
       setDate(eventToEdit.date);
+      const hasEndDate = !!eventToEdit.endDate && eventToEdit.endDate !== eventToEdit.date;
+      setIsMultiDay(hasEndDate);
+      setEndDate(eventToEdit.endDate || eventToEdit.date);
+      setIsAway(!!eventToEdit.isAway);
       setStartTime(eventToEdit.startTime || '18:00');
       setEndTime(eventToEdit.endTime || '19:00');
       setCategory(eventToEdit.category || 'general');
@@ -47,7 +54,11 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
     } else {
       setTitle('');
       setSelectedMemberIds(members.map(m => m.id)); // Default to all members
-      setDate(defaultDate || new Date().toISOString().split('T')[0]);
+      const initialDate = defaultDate || new Date().toISOString().split('T')[0];
+      setDate(initialDate);
+      setIsMultiDay(false);
+      setEndDate(initialDate);
+      setIsAway(false);
       setStartTime('18:00');
       setEndTime('19:00');
       setCategory('general');
@@ -85,6 +96,8 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
       title: title.trim(),
       memberIds: selectedMemberIds,
       date,
+      endDate: isMultiDay ? endDate : undefined,
+      isAway,
       startTime,
       endTime,
       category,
@@ -163,7 +176,11 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
               </label>
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value as EventCategory)}
+                onChange={(e) => {
+                  const newCategory = e.target.value as EventCategory;
+                  setCategory(newCategory);
+                  if (newCategory === 'travel') setIsAway(true);
+                }}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
               >
                 <option value="general">General</option>
@@ -173,21 +190,77 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
                 <option value="meals">Meals & Dining</option>
                 <option value="health">Health & Medical</option>
                 <option value="chores">Chores & House</option>
+                <option value="travel">Travel & Vacation</option>
               </select>
             </div>
 
             <div>
               <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                Date:
+                {isMultiDay ? 'Start Date:' : 'Date:'}
               </label>
               <input
                 type="date"
                 required
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  // Keep end date valid if it's now before the new start date
+                  if (isMultiDay && endDate < e.target.value) setEndDate(e.target.value);
+                }}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
               />
             </div>
+          </div>
+
+          {/* Multi-day toggle */}
+          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <CalendarIcon className="w-4 h-4 text-violet-500" />
+              This spans multiple days
+            </label>
+            <input
+              type="checkbox"
+              checked={isMultiDay}
+              onChange={(e) => {
+                setIsMultiDay(e.target.checked);
+                if (e.target.checked && endDate < date) setEndDate(date);
+              }}
+              className="w-4 h-4 text-violet-600 rounded"
+            />
+          </div>
+
+          {isMultiDay && (
+            <div>
+              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                End Date:
+              </label>
+              <input
+                type="date"
+                required
+                min={date}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          )}
+
+          {/* Away toggle — tells the chore randomizer to skip these members */}
+          <div className="p-3 bg-sky-50 dark:bg-sky-950/40 rounded-2xl border border-sky-200 dark:border-sky-900 flex items-center justify-between">
+            <div>
+              <span className="font-bold text-sky-900 dark:text-sky-300 flex items-center gap-1.5">
+                <Plane className="w-4 h-4 text-sky-600" /> Mark as "Away" for Chores
+              </span>
+              <p className="text-[11px] text-sky-700/80 dark:text-sky-400/80 mt-0.5">
+                The randomizer will skip these members' chore assignments for these dates.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={isAway}
+              onChange={(e) => setIsAway(e.target.checked)}
+              className="w-4 h-4 text-sky-600 rounded flex-shrink-0 ml-2"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -300,3 +373,4 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
     </div>
   );
 };
+
