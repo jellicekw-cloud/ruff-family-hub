@@ -65,6 +65,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
   const [role, setRole] = useState<FamilyMember['role']>('Son');
   const [color, setColor] = useState('#ec4899'); // Default Pink
   const [dietaryNotes, setDietaryNotes] = useState('');
+  const [excludeFromChores, setExcludeFromChores] = useState(false);
 
   const colorPalette = [
     { hex: '#8b5cf6', label: 'Violet', bgClass: 'bg-violet-100 text-violet-800 border-violet-300 dark:bg-violet-950/60 dark:text-violet-200 dark:border-violet-700', badgeClass: 'bg-violet-600 text-white' },
@@ -82,6 +83,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
     setRole('Son');
     setColor('#ec4899');
     setDietaryNotes('');
+    setExcludeFromChores(false);
     setShowAddModal(true);
   };
 
@@ -91,6 +93,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
     setRole(m.role);
     setColor(m.color);
     setDietaryNotes(m.dietaryNotes || '');
+    setExcludeFromChores(!!m.excludeFromChores);
     setShowAddModal(true);
   };
 
@@ -131,7 +134,8 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
         color,
         bgClass: matchedPalette.bgClass,
         badgeClass: matchedPalette.badgeClass,
-        dietaryNotes: dietaryNotes.trim() || undefined
+        dietaryNotes: dietaryNotes.trim() || undefined,
+        excludeFromChores
       });
     } else {
       onAddMember({
@@ -140,7 +144,8 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
         color,
         bgClass: matchedPalette.bgClass,
         badgeClass: matchedPalette.badgeClass,
-        dietaryNotes: dietaryNotes.trim() || undefined
+        dietaryNotes: dietaryNotes.trim() || undefined,
+        excludeFromChores
       });
     }
 
@@ -214,6 +219,12 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                   <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-900 dark:text-amber-300 font-medium flex items-start space-x-1.5">
                     <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                     <span>{member.dietaryNotes}</span>
+                  </div>
+                )}
+
+                {member.excludeFromChores && (
+                  <div className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-400 font-bold flex items-center gap-1.5 w-fit">
+                    <span>🚫🧹 Not in chore rotation</span>
                   </div>
                 )}
 
@@ -369,6 +380,23 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                   value={dietaryNotes}
                   onChange={(e) => setDietaryNotes(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                />
+              </div>
+
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div className="pr-3">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block">
+                    Skip in Chore Rotation
+                  </label>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    They'll never get chores assigned when you randomize (e.g. lives out of town) — but they're still fully usable on the calendar.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={excludeFromChores}
+                  onChange={(e) => setExcludeFromChores(e.target.checked)}
+                  className="w-4 h-4 text-slate-600 rounded flex-shrink-0"
                 />
               </div>
 
