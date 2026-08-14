@@ -118,7 +118,9 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
 
   // Filter recipes
   const filteredRecipes = recipes.filter(r => {
-    const matchesCategory = selectedCategory === 'ALL' || r.category === selectedCategory;
+    const matchesCategory =
+      selectedCategory === 'ALL' ||
+      (selectedCategory === 'AI Generated' ? r.source === 'AI Generated' : r.category === selectedCategory);
     const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           r.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesSearch;
