@@ -15,7 +15,8 @@ import {
   CalendarDays,
   ListFilter,
   Sparkles,
-  Link2
+  Link2,
+  Plane as PlaneIcon
 } from 'lucide-react';
 import { CalendarEvent, FamilyMember, EventCategory } from '../types';
 
@@ -56,7 +57,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     meals: 'bg-amber-500 text-white font-bold shadow-xs',
     health: 'bg-rose-600 text-white font-bold shadow-xs',
     chores: 'bg-cyan-600 text-white font-bold shadow-xs',
+    travel: 'bg-sky-600 text-white font-bold shadow-xs',
     general: 'bg-violet-600 text-white font-bold shadow-xs'
+  };
+
+  // True if a given YYYY-MM-DD date falls anywhere within an event's span
+  // (handles both single-day events and multi-day date-range events).
+  const eventCoversDate = (event: CalendarEvent, dateStr: string): boolean => {
+    const end = event.endDate || event.date;
+    return event.date <= dateStr && dateStr <= end;
   };
 
   const categorySoftBadgeMap: Record<EventCategory, string> = {
@@ -66,6 +75,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     meals: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-200 dark:border-amber-800',
     health: 'bg-rose-100 text-rose-900 border-rose-200 dark:bg-rose-950/80 dark:text-rose-200 dark:border-rose-800',
     chores: 'bg-cyan-100 text-cyan-900 border-cyan-200 dark:bg-cyan-950/80 dark:text-cyan-200 dark:border-cyan-800',
+    travel: 'bg-sky-100 text-sky-900 border-sky-200 dark:bg-sky-950/80 dark:text-sky-200 dark:border-sky-800',
     general: 'bg-violet-100 text-violet-900 border-violet-200 dark:bg-violet-950/80 dark:text-violet-200 dark:border-violet-800'
   };
 
@@ -303,7 +313,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           {weekDays.map((dayDate, i) => {
             const dateStr = dayDate.toISOString().split('T')[0];
             const isToday = new Date().toISOString().split('T')[0] === dateStr;
-            const dayEvents = filteredEvents.filter(e => e.date === dateStr);
+            const dayEvents = filteredEvents.filter(e => eventCoversDate(e, dateStr));
 
             return (
               <div 
@@ -467,8 +477,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                               <Utensils className="w-3 h-3" /> MEAL PLAN
                             </span>
                           )}
+                          {evt.isAway && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-300 flex items-center gap-1">
+                              <PlaneIcon className="w-3 h-3" /> AWAY
+                            </span>
+                          )}
                           <span className="text-xs text-slate-400">
-                            {evt.date} {evt.startTime ? `• ${evt.startTime} - ${evt.endTime}` : ''}
+                            {evt.date}{evt.endDate && evt.endDate !== evt.date ? ` → ${evt.endDate}` : ''} {evt.startTime ? `• ${evt.startTime} - ${evt.endTime}` : ''}
                           </span>
                         </div>
 
@@ -540,7 +555,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               const todayStr = new Date().toISOString().split('T')[0];
               const isCurrentMonth = dayDate.getMonth() === currentDate.getMonth();
               const isToday = todayStr === dateStr;
-              const dayEvents = filteredEvents.filter(e => e.date === dateStr);
+              const dayEvents = filteredEvents.filter(e => eventCoversDate(e, dateStr));
 
               return (
                 <div
@@ -613,3 +628,4 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     </div>
   );
 };
+
