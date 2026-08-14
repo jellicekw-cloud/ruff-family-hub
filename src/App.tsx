@@ -240,21 +240,19 @@ export default function App() {
       return;
     }
 
-    // Monday-through-Sunday range for "this week"
+    // You randomize every Sunday, so "this week" runs Sunday → Saturday,
+    // and every chore assigned this round shares the same Saturday deadline.
     const now = new Date();
     const day = now.getDay(); // 0 = Sun ... 6 = Sat
-    const mondayOffset = day === 0 ? -6 : 1 - day;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + mondayOffset);
-    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(now);
+    sunday.setDate(now.getDate() - day);
+    sunday.setHours(0, 0, 0, 0);
 
-    const weekDates: string[] = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      return d.toISOString().split('T')[0];
-    });
-    const weekStart = weekDates[0];
-    const weekEnd = weekDates[6];
+    const saturday = new Date(sunday);
+    saturday.setDate(sunday.getDate() + 6);
+
+    const weekStart = sunday.toISOString().split('T')[0];
+    const weekEnd = saturday.toISOString().split('T')[0]; // the shared deadline for every chore this round
 
     // Clear out any previously-randomized chores for this same week so re-rolling doesn't duplicate
     const poolTitles = new Set(WEEKLY_CHORE_POOL.map(p => p.title));
@@ -287,7 +285,7 @@ export default function App() {
       area: preset.area,
       assignedMemberId: memberId,
       frequency: 'Weekly',
-      dueDate: weekDates[idx % weekDates.length],
+      dueDate: weekEnd,
       isCompleted: false,
       priority: 'Medium',
       points: preset.points
@@ -295,6 +293,40 @@ export default function App() {
 
     setChores([...keptChores, ...newChores]);
     setActiveTab('chores');
+
+    // Group flat area assignments by member so each person gets ONE notification
+    // listing everything they were assigned, not one text per area.
+    const byMember: Record<string, { areas: string[]; totalTasks: number }> = {};
+    newChores.forEach(c => {
+      if (!c.assignedMemberId) return;
+      if (!byMember[c.assignedMemberId]) {
+        byMember[c.assignedMemberId] = { areas: [], totalTasks: 0 };
+      }
+      byMember[c.assignedMemberId].areas.push(c.area);
+      byMember[c.assignedMemberId].totalTasks += AREA_CHECKLISTS[c.area].length;
+    });
+
+    const deadlineLabel = saturday.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric'
+    });
+
+    const pushAssignments = Object.entries(byMember).map(([memberId, info]) => ({
+      memberId,
+      memberName: members.find(m => m.id === memberId)?.name || 'Someone',
+      areas: info.areas,
+      totalTasks: info.totalTasks,
+      dueDateLabel: deadlineLabel
+    }));
+
+    // Fire-and-forget: chore reminder push notifications shouldn't block the UI
+    // or fail loudly if nobody's enabled notifications on their device yet.
+    fetch('/api/send-chore-notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assignments: pushAssignments })
+    }).catch(err => console.error('Chore notification push failed:', err));
 
     const summary = newChores
       .map(c => `${members.find(m => m.id === c.assignedMemberId)?.name || 'Someone'} → ${c.area} (${AREA_CHECKLISTS[c.area].length} tasks)`)
