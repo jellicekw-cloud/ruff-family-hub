@@ -52,18 +52,52 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
   const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
 
   // Calculate pantry match for a recipe
+  // Words too generic/common to count as a meaningful match on their own
+  // (e.g. "fresh chicken" vs "frozen chicken" should still match on "chicken").
+  const DESCRIPTOR_WORDS = new Set([
+    'fresh', 'frozen', 'organic', 'boneless', 'skinless', 'large', 'small',
+    'medium', 'whole', 'ground', 'chopped', 'diced', 'sliced', 'shredded',
+    'minced', 'raw', 'cooked', 'ripe', 'lean', 'extra', 'reduced', 'fat',
+    'low', 'fine', 'coarse', 'crushed', 'dried', 'canned', 'jarred',
+    'of', 'and', 'the', 'a', 'an', 'to', 'taste', 'optional', 'for'
+  ]);
+
+  const significantWords = (str: string): Set<string> =>
+    new Set(
+      str
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 2 && !DESCRIPTOR_WORDS.has(w))
+    );
+
+  // Two item names "match" if either fully contains the other (handles exact/close
+  // phrasing), OR if they share at least one meaningful word in common (handles
+  // real-world cases like "chicken thighs" vs "chicken breast", or branded product
+  // names like "Sargento Shredded Mexican Blend Cheese" vs a recipe's "cheddar cheese").
+  const namesMatch = (pantryName: string, ingredientName: string): boolean => {
+    const pLower = pantryName.toLowerCase();
+    const iLower = ingredientName.toLowerCase();
+    if (pLower.includes(iLower) || iLower.includes(pLower)) return true;
+
+    const pWords = significantWords(pantryName);
+    const iWords = significantWords(ingredientName);
+    for (const word of iWords) {
+      if (pWords.has(word)) return true;
+    }
+    return false;
+  };
+
   const getPantryMatchInfo = (recipe: Recipe) => {
     const inStockNames = pantry
       .filter(p => p.status === 'in_stock' || p.status === 'running_low')
-      .map(p => p.name.toLowerCase());
+      .map(p => p.name);
 
     let matchCount = 0;
     const missing: { name: string; amount: string }[] = [];
 
     recipe.ingredients.forEach(ing => {
-      const ingNameLower = ing.name.toLowerCase();
-      // check if any pantry item name is included in ingredient or vice versa
-      const hasItem = inStockNames.some(pName => pName.includes(ingNameLower) || ingNameLower.includes(pName));
+      const hasItem = inStockNames.some(pName => namesMatch(pName, ing.name));
       if (hasItem) {
         matchCount++;
       } else {
