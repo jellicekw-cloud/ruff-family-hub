@@ -16,6 +16,7 @@ export type EventCategory =
   | 'meals' 
   | 'health' 
   | 'chores' 
+  | 'travel'
   | 'general';
 
 export interface FamilyMember {
@@ -33,7 +34,9 @@ export interface CalendarEvent {
   id: string;
   title: string;
   memberIds: string[]; // Assigned family members
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD (start date)
+  endDate?: string; // YYYY-MM-DD — for multi-day events like vacations/trips; omit for single-day events
+  isAway?: boolean; // true = the assigned members are unavailable (traveling, etc) — randomizer skips them for chores during this range
   startTime: string; // HH:mm
   endTime: string; // HH:mm
   category: EventCategory;
