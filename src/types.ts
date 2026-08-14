@@ -28,6 +28,7 @@ export interface FamilyMember {
   badgeClass: string;
   avatarIcon?: string;
   dietaryNotes?: string;
+  excludeFromChores?: boolean; // true = never included in the chore randomizer's rotation (e.g. lives out of town) — still fully usable on the calendar
 }
 
 export interface CalendarEvent {
