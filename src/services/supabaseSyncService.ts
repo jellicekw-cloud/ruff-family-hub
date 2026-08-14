@@ -90,34 +90,43 @@ const rowToShopping = (r: ShoppingRow): ShoppingItem => ({
 
 export async function fetchPantryFromSupabase(): Promise<PantryItem[] | null> {
   if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase.from('pantry_items').select('*').order('name');
-  if (error) {
-    console.error('Supabase fetchPantry error:', error.message);
+  try {
+    const { data, error } = await supabase.from('pantry_items').select('*').order('name');
+    if (error) {
+      console.error('Supabase fetchPantry error:', error.message);
+      return null;
+    }
+    return (data as PantryRow[]).map(rowToPantry);
+  } catch (err: any) {
+    console.error('Supabase fetchPantryFromSupabase unexpected error:', err.message || err);
     return null;
   }
-  return (data as PantryRow[]).map(rowToPantry);
 }
 
 export async function syncPantryToSupabase(items: PantryItem[]): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const { data: existing, error: fetchErr } = await supabase.from('pantry_items').select('id');
-  if (fetchErr) {
-    console.error('Supabase pantry pre-sync fetch error:', fetchErr.message);
-    return;
-  }
+  try {
+    const { data: existing, error: fetchErr } = await supabase.from('pantry_items').select('id');
+    if (fetchErr) {
+      console.error('Supabase pantry pre-sync fetch error:', fetchErr.message);
+      return;
+    }
 
-  const currentIds = new Set(items.map(i => i.id));
-  const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
+    const currentIds = new Set(items.map(i => i.id));
+    const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
 
-  if (staleIds.length > 0) {
-    const { error: delErr } = await supabase.from('pantry_items').delete().in('id', staleIds);
-    if (delErr) console.error('Supabase pantry delete error:', delErr.message);
-  }
+    if (staleIds.length > 0) {
+      const { error: delErr } = await supabase.from('pantry_items').delete().in('id', staleIds);
+      if (delErr) console.error('Supabase pantry delete error:', delErr.message);
+    }
 
-  if (items.length > 0) {
-    const { error: upsertErr } = await supabase.from('pantry_items').upsert(items.map(pantryToRow));
-    if (upsertErr) console.error('Supabase pantry upsert error:', upsertErr.message);
+    if (items.length > 0) {
+      const { error: upsertErr } = await supabase.from('pantry_items').upsert(items.map(pantryToRow));
+      if (upsertErr) console.error('Supabase pantry upsert error:', upsertErr.message);
+    }
+  } catch (err: any) {
+    console.error('Supabase syncPantryToSupabase unexpected error:', err.message || err);
   }
 }
 
@@ -125,34 +134,43 @@ export async function syncPantryToSupabase(items: PantryItem[]): Promise<void> {
 
 export async function fetchShoppingListFromSupabase(): Promise<ShoppingItem[] | null> {
   if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase.from('shopping_items').select('*').order('created_at', { ascending: false });
-  if (error) {
-    console.error('Supabase fetchShoppingList error:', error.message);
+  try {
+    const { data, error } = await supabase.from('shopping_items').select('*').order('created_at', { ascending: false });
+    if (error) {
+      console.error('Supabase fetchShoppingList error:', error.message);
+      return null;
+    }
+    return (data as ShoppingRow[]).map(rowToShopping);
+  } catch (err: any) {
+    console.error('Supabase fetchShoppingListFromSupabase unexpected error:', err.message || err);
     return null;
   }
-  return (data as ShoppingRow[]).map(rowToShopping);
 }
 
 export async function syncShoppingListToSupabase(items: ShoppingItem[]): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const { data: existing, error: fetchErr } = await supabase.from('shopping_items').select('id');
-  if (fetchErr) {
-    console.error('Supabase shopping pre-sync fetch error:', fetchErr.message);
-    return;
-  }
+  try {
+    const { data: existing, error: fetchErr } = await supabase.from('shopping_items').select('id');
+    if (fetchErr) {
+      console.error('Supabase shopping pre-sync fetch error:', fetchErr.message);
+      return;
+    }
 
-  const currentIds = new Set(items.map(i => i.id));
-  const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
+    const currentIds = new Set(items.map(i => i.id));
+    const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
 
-  if (staleIds.length > 0) {
-    const { error: delErr } = await supabase.from('shopping_items').delete().in('id', staleIds);
-    if (delErr) console.error('Supabase shopping delete error:', delErr.message);
-  }
+    if (staleIds.length > 0) {
+      const { error: delErr } = await supabase.from('shopping_items').delete().in('id', staleIds);
+      if (delErr) console.error('Supabase shopping delete error:', delErr.message);
+    }
 
-  if (items.length > 0) {
-    const { error: upsertErr } = await supabase.from('shopping_items').upsert(items.map(shoppingToRow));
-    if (upsertErr) console.error('Supabase shopping upsert error:', upsertErr.message);
+    if (items.length > 0) {
+      const { error: upsertErr } = await supabase.from('shopping_items').upsert(items.map(shoppingToRow));
+      if (upsertErr) console.error('Supabase shopping upsert error:', upsertErr.message);
+    }
+  } catch (err: any) {
+    console.error('Supabase syncShoppingListToSupabase unexpected error:', err.message || err);
   }
 }
 
@@ -198,35 +216,44 @@ const rowToMember = (r: FamilyMemberRow): FamilyMember => ({
 
 export async function fetchFamilyMembersFromSupabase(): Promise<FamilyMember[] | null> {
   if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase.from('family_members').select('*').order('sort_order');
-  if (error) {
-    console.error('Supabase fetchFamilyMembers error:', error.message);
+  try {
+    const { data, error } = await supabase.from('family_members').select('*').order('sort_order');
+    if (error) {
+      console.error('Supabase fetchFamilyMembers error:', error.message);
+      return null;
+    }
+    return (data as FamilyMemberRow[]).map(rowToMember);
+  } catch (err: any) {
+    console.error('Supabase fetchFamilyMembersFromSupabase unexpected error:', err.message || err);
     return null;
   }
-  return (data as FamilyMemberRow[]).map(rowToMember);
 }
 
 export async function syncFamilyMembersToSupabase(members: FamilyMember[]): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const { data: existing, error: fetchErr } = await supabase.from('family_members').select('id');
-  if (fetchErr) {
-    console.error('Supabase family members pre-sync fetch error:', fetchErr.message);
-    return;
-  }
+  try {
+    const { data: existing, error: fetchErr } = await supabase.from('family_members').select('id');
+    if (fetchErr) {
+      console.error('Supabase family members pre-sync fetch error:', fetchErr.message);
+      return;
+    }
 
-  const currentIds = new Set(members.map(m => m.id));
-  const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
+    const currentIds = new Set(members.map(m => m.id));
+    const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
 
-  if (staleIds.length > 0) {
-    const { error: delErr } = await supabase.from('family_members').delete().in('id', staleIds);
-    if (delErr) console.error('Supabase family members delete error:', delErr.message);
-  }
+    if (staleIds.length > 0) {
+      const { error: delErr } = await supabase.from('family_members').delete().in('id', staleIds);
+      if (delErr) console.error('Supabase family members delete error:', delErr.message);
+    }
 
-  if (members.length > 0) {
-    const rows = members.map((m, idx) => memberToRow(m, idx));
-    const { error: upsertErr } = await supabase.from('family_members').upsert(rows);
-    if (upsertErr) console.error('Supabase family members upsert error:', upsertErr.message);
+    if (members.length > 0) {
+      const rows = members.map((m, idx) => memberToRow(m, idx));
+      const { error: upsertErr } = await supabase.from('family_members').upsert(rows);
+      if (upsertErr) console.error('Supabase family members upsert error:', upsertErr.message);
+    }
+  } catch (err: any) {
+    console.error('Supabase syncFamilyMembersToSupabase unexpected error:', err.message || err);
   }
 }
 
@@ -288,34 +315,43 @@ const rowToEvent = (r: CalendarEventRow): CalendarEvent => ({
 
 export async function fetchEventsFromSupabase(): Promise<CalendarEvent[] | null> {
   if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase.from('calendar_events').select('*').order('date');
-  if (error) {
-    console.error('Supabase fetchEvents error:', error.message);
+  try {
+    const { data, error } = await supabase.from('calendar_events').select('*').order('date');
+    if (error) {
+      console.error('Supabase fetchEvents error:', error.message);
+      return null;
+    }
+    return (data as CalendarEventRow[]).map(rowToEvent);
+  } catch (err: any) {
+    console.error('Supabase fetchEventsFromSupabase unexpected error:', err.message || err);
     return null;
   }
-  return (data as CalendarEventRow[]).map(rowToEvent);
 }
 
 export async function syncEventsToSupabase(events: CalendarEvent[]): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const { data: existing, error: fetchErr } = await supabase.from('calendar_events').select('id');
-  if (fetchErr) {
-    console.error('Supabase events pre-sync fetch error:', fetchErr.message);
-    return;
-  }
+  try {
+    const { data: existing, error: fetchErr } = await supabase.from('calendar_events').select('id');
+    if (fetchErr) {
+      console.error('Supabase events pre-sync fetch error:', fetchErr.message);
+      return;
+    }
 
-  const currentIds = new Set(events.map(e => e.id));
-  const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
+    const currentIds = new Set(events.map(e => e.id));
+    const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
 
-  if (staleIds.length > 0) {
-    const { error: delErr } = await supabase.from('calendar_events').delete().in('id', staleIds);
-    if (delErr) console.error('Supabase events delete error:', delErr.message);
-  }
+    if (staleIds.length > 0) {
+      const { error: delErr } = await supabase.from('calendar_events').delete().in('id', staleIds);
+      if (delErr) console.error('Supabase events delete error:', delErr.message);
+    }
 
-  if (events.length > 0) {
-    const { error: upsertErr } = await supabase.from('calendar_events').upsert(events.map(eventToRow));
-    if (upsertErr) console.error('Supabase events upsert error:', upsertErr.message);
+    if (events.length > 0) {
+      const { error: upsertErr } = await supabase.from('calendar_events').upsert(events.map(eventToRow));
+      if (upsertErr) console.error('Supabase events upsert error:', upsertErr.message);
+    }
+  } catch (err: any) {
+    console.error('Supabase syncEventsToSupabase unexpected error:', err.message || err);
   }
 }
 
@@ -365,34 +401,43 @@ const rowToChore = (r: ChoreRow): ChoreItem => ({
 
 export async function fetchChoresFromSupabase(): Promise<ChoreItem[] | null> {
   if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase.from('chores').select('*').order('due_date');
-  if (error) {
-    console.error('Supabase fetchChores error:', error.message);
+  try {
+    const { data, error } = await supabase.from('chores').select('*').order('due_date');
+    if (error) {
+      console.error('Supabase fetchChores error:', error.message);
+      return null;
+    }
+    return (data as ChoreRow[]).map(rowToChore);
+  } catch (err: any) {
+    console.error('Supabase fetchChoresFromSupabase unexpected error:', err.message || err);
     return null;
   }
-  return (data as ChoreRow[]).map(rowToChore);
 }
 
 export async function syncChoresToSupabase(chores: ChoreItem[]): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const { data: existing, error: fetchErr } = await supabase.from('chores').select('id');
-  if (fetchErr) {
-    console.error('Supabase chores pre-sync fetch error:', fetchErr.message);
-    return;
-  }
+  try {
+    const { data: existing, error: fetchErr } = await supabase.from('chores').select('id');
+    if (fetchErr) {
+      console.error('Supabase chores pre-sync fetch error:', fetchErr.message);
+      return;
+    }
 
-  const currentIds = new Set(chores.map(c => c.id));
-  const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
+    const currentIds = new Set(chores.map(c => c.id));
+    const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
 
-  if (staleIds.length > 0) {
-    const { error: delErr } = await supabase.from('chores').delete().in('id', staleIds);
-    if (delErr) console.error('Supabase chores delete error:', delErr.message);
-  }
+    if (staleIds.length > 0) {
+      const { error: delErr } = await supabase.from('chores').delete().in('id', staleIds);
+      if (delErr) console.error('Supabase chores delete error:', delErr.message);
+    }
 
-  if (chores.length > 0) {
-    const { error: upsertErr } = await supabase.from('chores').upsert(chores.map(choreToRow));
-    if (upsertErr) console.error('Supabase chores upsert error:', upsertErr.message);
+    if (chores.length > 0) {
+      const { error: upsertErr } = await supabase.from('chores').upsert(chores.map(choreToRow));
+      if (upsertErr) console.error('Supabase chores upsert error:', upsertErr.message);
+    }
+  } catch (err: any) {
+    console.error('Supabase syncChoresToSupabase unexpected error:', err.message || err);
   }
 }
 
@@ -454,34 +499,43 @@ const rowToRecipe = (r: RecipeRow): Recipe => ({
 
 export async function fetchRecipesFromSupabase(): Promise<Recipe[] | null> {
   if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase.from('recipes').select('*');
-  if (error) {
-    console.error('Supabase fetchRecipes error:', error.message);
+  try {
+    const { data, error } = await supabase.from('recipes').select('*');
+    if (error) {
+      console.error('Supabase fetchRecipes error:', error.message);
+      return null;
+    }
+    return (data as RecipeRow[]).map(rowToRecipe);
+  } catch (err: any) {
+    console.error('Supabase fetchRecipesFromSupabase unexpected error:', err.message || err);
     return null;
   }
-  return (data as RecipeRow[]).map(rowToRecipe);
 }
 
 export async function syncRecipesToSupabase(recipes: Recipe[]): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const { data: existing, error: fetchErr } = await supabase.from('recipes').select('id');
-  if (fetchErr) {
-    console.error('Supabase recipes pre-sync fetch error:', fetchErr.message);
-    return;
-  }
+  try {
+    const { data: existing, error: fetchErr } = await supabase.from('recipes').select('id');
+    if (fetchErr) {
+      console.error('Supabase recipes pre-sync fetch error:', fetchErr.message);
+      return;
+    }
 
-  const currentIds = new Set(recipes.map(r => r.id));
-  const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
+    const currentIds = new Set(recipes.map(r => r.id));
+    const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
 
-  if (staleIds.length > 0) {
-    const { error: delErr } = await supabase.from('recipes').delete().in('id', staleIds);
-    if (delErr) console.error('Supabase recipes delete error:', delErr.message);
-  }
+    if (staleIds.length > 0) {
+      const { error: delErr } = await supabase.from('recipes').delete().in('id', staleIds);
+      if (delErr) console.error('Supabase recipes delete error:', delErr.message);
+    }
 
-  if (recipes.length > 0) {
-    const { error: upsertErr } = await supabase.from('recipes').upsert(recipes.map(recipeToRow));
-    if (upsertErr) console.error('Supabase recipes upsert error:', upsertErr.message);
+    if (recipes.length > 0) {
+      const { error: upsertErr } = await supabase.from('recipes').upsert(recipes.map(recipeToRow));
+      if (upsertErr) console.error('Supabase recipes upsert error:', upsertErr.message);
+    }
+  } catch (err: any) {
+    console.error('Supabase syncRecipesToSupabase unexpected error:', err.message || err);
   }
 }
 
@@ -513,34 +567,43 @@ const rowToReward = (r: RewardRow): Reward => ({
 
 export async function fetchRewardsFromSupabase(): Promise<Reward[] | null> {
   if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase.from('rewards').select('*');
-  if (error) {
-    console.error('Supabase fetchRewards error:', error.message);
+  try {
+    const { data, error } = await supabase.from('rewards').select('*');
+    if (error) {
+      console.error('Supabase fetchRewards error:', error.message);
+      return null;
+    }
+    return (data as RewardRow[]).map(rowToReward);
+  } catch (err: any) {
+    console.error('Supabase fetchRewardsFromSupabase unexpected error:', err.message || err);
     return null;
   }
-  return (data as RewardRow[]).map(rowToReward);
 }
 
 export async function syncRewardsToSupabase(rewards: Reward[]): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const { data: existing, error: fetchErr } = await supabase.from('rewards').select('id');
-  if (fetchErr) {
-    console.error('Supabase rewards pre-sync fetch error:', fetchErr.message);
-    return;
-  }
+  try {
+    const { data: existing, error: fetchErr } = await supabase.from('rewards').select('id');
+    if (fetchErr) {
+      console.error('Supabase rewards pre-sync fetch error:', fetchErr.message);
+      return;
+    }
 
-  const currentIds = new Set(rewards.map(r => r.id));
-  const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
+    const currentIds = new Set(rewards.map(r => r.id));
+    const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
 
-  if (staleIds.length > 0) {
-    const { error: delErr } = await supabase.from('rewards').delete().in('id', staleIds);
-    if (delErr) console.error('Supabase rewards delete error:', delErr.message);
-  }
+    if (staleIds.length > 0) {
+      const { error: delErr } = await supabase.from('rewards').delete().in('id', staleIds);
+      if (delErr) console.error('Supabase rewards delete error:', delErr.message);
+    }
 
-  if (rewards.length > 0) {
-    const { error: upsertErr } = await supabase.from('rewards').upsert(rewards.map(rewardToRow));
-    if (upsertErr) console.error('Supabase rewards upsert error:', upsertErr.message);
+    if (rewards.length > 0) {
+      const { error: upsertErr } = await supabase.from('rewards').upsert(rewards.map(rewardToRow));
+      if (upsertErr) console.error('Supabase rewards upsert error:', upsertErr.message);
+    }
+  } catch (err: any) {
+    console.error('Supabase syncRewardsToSupabase unexpected error:', err.message || err);
   }
 }
 
@@ -581,34 +644,43 @@ const rowToRedemption = (r: RedemptionRow): RewardRedemption => ({
 
 export async function fetchRedemptionsFromSupabase(): Promise<RewardRedemption[] | null> {
   if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase.from('reward_redemptions').select('*').order('redeemed_at', { ascending: false });
-  if (error) {
-    console.error('Supabase fetchRedemptions error:', error.message);
+  try {
+    const { data, error } = await supabase.from('reward_redemptions').select('*').order('redeemed_at', { ascending: false });
+    if (error) {
+      console.error('Supabase fetchRedemptions error:', error.message);
+      return null;
+    }
+    return (data as RedemptionRow[]).map(rowToRedemption);
+  } catch (err: any) {
+    console.error('Supabase fetchRedemptionsFromSupabase unexpected error:', err.message || err);
     return null;
   }
-  return (data as RedemptionRow[]).map(rowToRedemption);
 }
 
 export async function syncRedemptionsToSupabase(redemptions: RewardRedemption[]): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const { data: existing, error: fetchErr } = await supabase.from('reward_redemptions').select('id');
-  if (fetchErr) {
-    console.error('Supabase redemptions pre-sync fetch error:', fetchErr.message);
-    return;
-  }
+  try {
+    const { data: existing, error: fetchErr } = await supabase.from('reward_redemptions').select('id');
+    if (fetchErr) {
+      console.error('Supabase redemptions pre-sync fetch error:', fetchErr.message);
+      return;
+    }
 
-  const currentIds = new Set(redemptions.map(r => r.id));
-  const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
+    const currentIds = new Set(redemptions.map(r => r.id));
+    const staleIds = (existing || []).map(r => r.id).filter((id: string) => !currentIds.has(id));
 
-  if (staleIds.length > 0) {
-    const { error: delErr } = await supabase.from('reward_redemptions').delete().in('id', staleIds);
-    if (delErr) console.error('Supabase redemptions delete error:', delErr.message);
-  }
+    if (staleIds.length > 0) {
+      const { error: delErr } = await supabase.from('reward_redemptions').delete().in('id', staleIds);
+      if (delErr) console.error('Supabase redemptions delete error:', delErr.message);
+    }
 
-  if (redemptions.length > 0) {
-    const { error: upsertErr } = await supabase.from('reward_redemptions').upsert(redemptions.map(redemptionToRow));
-    if (upsertErr) console.error('Supabase redemptions upsert error:', upsertErr.message);
+    if (redemptions.length > 0) {
+      const { error: upsertErr } = await supabase.from('reward_redemptions').upsert(redemptions.map(redemptionToRow));
+      if (upsertErr) console.error('Supabase redemptions upsert error:', upsertErr.message);
+    }
+  } catch (err: any) {
+    console.error('Supabase syncRedemptionsToSupabase unexpected error:', err.message || err);
   }
 }
 
