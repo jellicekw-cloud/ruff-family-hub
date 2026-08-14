@@ -9,9 +9,15 @@ import {
   Trash2, 
   ShieldAlert, 
   Heart,
-  X
+  X,
+  Bell,
+  BellRing,
+  Share,
+  PlusSquare,
+  CheckCircle2
 } from 'lucide-react';
 import { FamilyMember, CalendarEvent, ShoppingItem } from '../types';
+import { subscribeMemberToPush, isStandalone } from '../utils/pushNotifications';
 
 interface FamilyMembersViewProps {
   members: FamilyMember[];
@@ -32,6 +38,9 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
 }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
+  const [subscribingId, setSubscribingId] = useState<string | null>(null);
+  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
+  const [showIOSInstallHelp, setShowIOSInstallHelp] = useState(false);
 
   const [name, setName] = useState('');
   const [role, setRole] = useState<FamilyMember['role']>('Son');
@@ -64,6 +73,24 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
     setColor(m.color);
     setDietaryNotes(m.dietaryNotes || '');
     setShowAddModal(true);
+  };
+
+  const handleEnableNotifications = async (memberId: string) => {
+    setSubscribingId(memberId);
+    const result = await subscribeMemberToPush(memberId);
+    setSubscribingId(null);
+
+    if (result.status === 'subscribed') {
+      setSubscribedIds(prev => new Set(prev).add(memberId));
+    } else if (result.status === 'needs-install') {
+      setShowIOSInstallHelp(true);
+    } else if (result.status === 'permission-denied') {
+      alert('Notifications were blocked. To enable them, check your phone\'s Settings for this app and allow notifications, then try again.');
+    } else if (result.status === 'unsupported') {
+      alert('This browser doesn\'t support push notifications.');
+    } else {
+      alert(`Couldn't enable notifications: ${result.status === 'error' ? result.message : 'Unknown error'}`);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -180,6 +207,31 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                     </span>
                   </div>
                 </div>
+
+                {/* Chore Reminder Notifications */}
+                <button
+                  onClick={() => handleEnableNotifications(member.id)}
+                  disabled={subscribingId === member.id}
+                  className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all ${
+                    subscribedIds.has(member.id)
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900'
+                      : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                  }`}
+                >
+                  {subscribedIds.has(member.id) ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Reminders On (This Device)</span>
+                    </>
+                  ) : subscribingId === member.id ? (
+                    <span>Enabling...</span>
+                  ) : (
+                    <>
+                      <Bell className="w-3.5 h-3.5" />
+                      <span>Enable Chore Reminders</span>
+                    </>
+                  )}
+                </button>
 
               </div>
 
@@ -311,6 +363,64 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
         </div>
       )}
 
+      {/* iOS "Add to Home Screen First" instructions */}
+      {showIOSInstallHelp && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 space-y-4 border border-slate-200 dark:border-slate-800 shadow-2xl relative">
+            <button
+              onClick={() => setShowIOSInstallHelp(false)}
+              className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-600 rounded-full"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2 text-cyan-600">
+              <BellRing className="w-5 h-5" />
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">One Quick Step First</h3>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              On iPhone, notifications only work after adding this app to your Home Screen. It only takes a few seconds:
+            </p>
+
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 text-xs font-bold flex items-center justify-center flex-shrink-0">1</div>
+                <p className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  Tap the <Share className="w-3.5 h-3.5 inline text-blue-500" /> Share button at the bottom of Safari
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 text-xs font-bold flex items-center justify-center flex-shrink-0">2</div>
+                <p className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  Scroll down and tap <PlusSquare className="w-3.5 h-3.5 inline" /> "Add to Home Screen"
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 text-xs font-bold flex items-center justify-center flex-shrink-0">3</div>
+                <p className="text-xs text-slate-700 dark:text-slate-300">
+                  Close Safari, then open the app from the new icon on your Home Screen
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 text-xs font-bold flex items-center justify-center flex-shrink-0">4</div>
+                <p className="text-xs text-slate-700 dark:text-slate-300">
+                  Go to Family Members and tap "Enable Chore Reminders" again — it'll work this time!
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowIOSInstallHelp(false)}
+              className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-xs font-extrabold"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
+
