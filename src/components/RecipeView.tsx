@@ -117,14 +117,20 @@ export const RecipeView: React.FC<RecipeViewProps> = ({
   };
 
   // Filter recipes
-  const filteredRecipes = recipes.filter(r => {
-    const matchesCategory =
-      selectedCategory === 'ALL' ||
-      (selectedCategory === 'AI Generated' ? r.source === 'AI Generated' : r.category === selectedCategory);
-    const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          r.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesCategory && matchesSearch;
-  });
+  const filteredRecipes = recipes
+    .filter(r => {
+      const matchesCategory =
+        selectedCategory === 'ALL' ||
+        (selectedCategory === 'AI Generated' ? r.source === 'AI Generated' : r.category === selectedCategory);
+      const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            r.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesCategory && matchesSearch;
+    })
+    // Highest pantry match first; ties broken alphabetically so the order stays stable
+    .sort((a, b) => {
+      const diff = getPantryMatchInfo(b).matchPercentage - getPantryMatchInfo(a).matchPercentage;
+      return diff !== 0 ? diff : a.title.localeCompare(b.title);
+    });
 
   // Call backend API `/api/gemini/recipe-finder`
   const handleGenerateAiRecipes = async () => {
