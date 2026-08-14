@@ -258,8 +258,21 @@ export default function App() {
     const poolTitles = new Set(WEEKLY_CHORE_POOL.map(p => p.title));
     const keptChores = chores.filter(c => !(poolTitles.has(c.title) && c.dueDate >= weekStart && c.dueDate <= weekEnd));
 
+    // Skip anyone marked "Away" on the calendar for any part of this week (vacations, trips, etc)
+    const awayMemberIds = new Set(
+      events
+        .filter(e => e.isAway && e.date <= weekEnd && (e.endDate || e.date) >= weekStart)
+        .flatMap(e => e.memberIds)
+    );
+    const availableMembers = members.filter(m => !awayMemberIds.has(m.id));
+    const awayMembersThisWeek = members.filter(m => awayMemberIds.has(m.id));
+
+    // If literally everyone is away, fall back to assigning across everyone anyway
+    // rather than silently generating zero chores.
+    const assignPool = availableMembers.length > 0 ? availableMembers : members;
+
     // Shuffle family members so ties break differently each time
-    const shuffledMembers = [...members].sort(() => Math.random() - 0.5);
+    const shuffledMembers = [...assignPool].sort(() => Math.random() - 0.5);
 
     // Balance real workload, not just "one area per person": heaviest areas
     // (by actual checklist task count) get assigned first, always to whoever
@@ -331,7 +344,10 @@ export default function App() {
     const summary = newChores
       .map(c => `${members.find(m => m.id === c.assignedMemberId)?.name || 'Someone'} → ${c.area} (${AREA_CHECKLISTS[c.area].length} tasks)`)
       .join('\n');
-    alert(`🎲 This week's chores are randomized (balanced by workload)!\n\n${summary}`);
+    const awayNote = awayMembersThisWeek.length > 0
+      ? `\n\n✈️ Skipped this week (marked Away): ${awayMembersThisWeek.map(m => m.name).join(', ')}`
+      : '';
+    alert(`🎲 This week's chores are randomized (balanced by workload)!\n\n${summary}${awayNote}`);
   };
 
   // --- REWARDS HANDLERS ---
