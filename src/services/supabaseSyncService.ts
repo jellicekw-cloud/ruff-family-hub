@@ -13,6 +13,7 @@ interface PantryRow {
   expiry_date: string | null;
   notes: string | null;
   updated_at: string;
+  barcode: string | null;
 }
 
 interface ShoppingRow {
@@ -41,6 +42,7 @@ const pantryToRow = (p: PantryItem): PantryRow => ({
   expiry_date: p.expiryDate || null,
   notes: p.notes || null,
   updated_at: p.updatedAt,
+  barcode: p.barcode || null,
 });
 
 const rowToPantry = (r: PantryRow): PantryItem => ({
@@ -53,6 +55,7 @@ const rowToPantry = (r: PantryRow): PantryItem => ({
   expiryDate: r.expiry_date || undefined,
   notes: r.notes || undefined,
   updatedAt: r.updated_at,
+  barcode: r.barcode || undefined,
 });
 
 const shoppingToRow = (s: ShoppingItem): ShoppingRow => ({
