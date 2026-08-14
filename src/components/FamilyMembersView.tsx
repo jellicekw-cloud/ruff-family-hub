@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   Plus, 
@@ -39,8 +39,27 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
   const [subscribingId, setSubscribingId] = useState<string | null>(null);
-  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
+  const [subscribedMemberIds, setSubscribedMemberIds] = useState<Set<string>>(new Set());
   const [showIOSInstallHelp, setShowIOSInstallHelp] = useState(false);
+
+  const refreshNotificationStatus = async () => {
+    try {
+      const res = await fetch('/api/notification-status');
+      const data = await res.json();
+      if (data.success) {
+        setSubscribedMemberIds(new Set(data.subscribedMemberIds));
+      }
+    } catch (err) {
+      console.error('Failed to check notification status:', err);
+    }
+  };
+
+  // Pull real subscription status from the database on load, instead of relying on
+  // local browser memory — that way it's accurate even after a refresh or on a
+  // different device checking someone else's status.
+  useEffect(() => {
+    refreshNotificationStatus();
+  }, []);
 
   const [name, setName] = useState('');
   const [role, setRole] = useState<FamilyMember['role']>('Son');
@@ -75,13 +94,18 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
     setShowAddModal(true);
   };
 
-  const handleEnableNotifications = async (memberId: string) => {
+  const handleEnableNotifications = async (memberId: string, memberName: string) => {
+    const confirmed = window.confirm(
+      `Is this ${memberName}'s phone?\n\nNotifications will be enabled for ${memberName} on this specific device. Only confirm if you're ${memberName}, or holding their phone right now.`
+    );
+    if (!confirmed) return;
+
     setSubscribingId(memberId);
     const result = await subscribeMemberToPush(memberId);
     setSubscribingId(null);
 
     if (result.status === 'subscribed') {
-      setSubscribedIds(prev => new Set(prev).add(memberId));
+      await refreshNotificationStatus();
     } else if (result.status === 'needs-install') {
       setShowIOSInstallHelp(true);
     } else if (result.status === 'permission-denied') {
@@ -136,6 +160,12 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
           <p className="text-xs sm:text-sm text-violet-100 max-w-xl">
             Assign unique colors to every family member to easily distinguish soccer practices, doctor checkups, and errands on the shared calendar.
           </p>
+          <div className="flex items-center gap-1.5 text-xs font-bold text-violet-100 pt-1">
+            <Bell className="w-3.5 h-3.5" />
+            <span>
+              🔔 {subscribedMemberIds.size} of {members.length} family members have notifications enabled
+            </span>
+          </div>
         </div>
 
         <button
@@ -210,18 +240,18 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
 
                 {/* Chore Reminder Notifications */}
                 <button
-                  onClick={() => handleEnableNotifications(member.id)}
+                  onClick={() => handleEnableNotifications(member.id, member.name)}
                   disabled={subscribingId === member.id}
                   className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all ${
-                    subscribedIds.has(member.id)
+                    subscribedMemberIds.has(member.id)
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900'
                       : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                   }`}
                 >
-                  {subscribedIds.has(member.id) ? (
+                  {subscribedMemberIds.has(member.id) ? (
                     <>
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Reminders On (This Device)</span>
+                      <span>Notifications Enabled</span>
                     </>
                   ) : subscribingId === member.id ? (
                     <span>Enabling...</span>
