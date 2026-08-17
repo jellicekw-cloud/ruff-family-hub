@@ -230,6 +230,11 @@ export const AREA_CHECKLISTS: Record<ChoreArea, string[]> = {
   'Staircase': [
     'Sweep and mop the stairs',
     'Dust down the banister'
+  ],
+  'Laundry Day': [
+    'Start a load of laundry',
+    'Move to the dryer',
+    'Fold and put away'
   ]
 };
 
@@ -242,5 +247,14 @@ export const WEEKLY_CHORE_POOL: { title: string; area: ChoreArea; points: number
   { title: 'Scrub Sink, Mirror & Sweep Foyer', area: 'Half Bathroom & Foyer', points: 35 },
   { title: 'Wash, Fold & Organize Laundry', area: 'Laundry Room', points: 15 },
   { title: 'Vacuum & Wipe Down Staircase', area: 'Staircase', points: 10 }
+];
+
+// Fixed, never-randomized laundry day assignments — these people always own
+// laundry on these specific days, every week, regardless of the chore randomizer.
+// dayOfWeek: 0 = Sunday ... 6 = Saturday
+export const LAUNDRY_SCHEDULE: { dayOfWeek: number; memberNames: string[] }[] = [
+  { dayOfWeek: 5, memberNames: ['Jellice'] },            // Friday
+  { dayOfWeek: 0, memberNames: ['Mikaela', 'Elisha'] },  // Sunday
+  { dayOfWeek: 1, memberNames: ['Briyanna'] }            // Monday
 ];
 
