@@ -34,7 +34,7 @@ import {
 } from './types';
 import { storageService } from './services/storageService';
 import { celebrateChoreComplete, celebrateBigMilestone } from './utils/confetti';
-import { WEEKLY_CHORE_POOL, AREA_CHECKLISTS } from './data/initialData';
+import { WEEKLY_CHORE_POOL, AREA_CHECKLISTS, LAUNDRY_SCHEDULE } from './data/initialData';
 import { isSupabaseConfigured } from './services/supabaseClient';
 import {
   fetchPantryFromSupabase,
@@ -158,6 +158,56 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Keeps Laundry Day events on the calendar automatically, always covering the
+  // next 12 weeks — completely independent of the chore randomizer. Runs once per
+  // app load; idempotent (checks what's already there before adding more), so it
+  // just quietly tops up coverage over time without creating duplicates.
+  useEffect(() => {
+    if (!isCloudDataLoaded || members.length === 0) return;
+
+    const existingIds = new Set(events.map(e => e.id));
+    const newLaundryEvents: CalendarEvent[] = [];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const horizonDays = 84; // 12 weeks ahead
+
+    for (let offset = 0; offset <= horizonDays; offset++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + offset);
+      const dayOfWeek = d.getDay();
+      const dateStr = d.toISOString().split('T')[0];
+
+      const scheduleEntry = LAUNDRY_SCHEDULE.find(s => s.dayOfWeek === dayOfWeek);
+      if (!scheduleEntry) continue;
+
+      const memberIds = scheduleEntry.memberNames
+        .map(name => members.find(m => m.name.toLowerCase() === name.toLowerCase())?.id)
+        .filter((id): id is string => !!id);
+      if (memberIds.length === 0) continue;
+
+      const eventId = `evt-laundry-${dayOfWeek}-${dateStr}`;
+      if (existingIds.has(eventId)) continue;
+
+      const namesLabel = scheduleEntry.memberNames.join(' & ');
+      newLaundryEvents.push({
+        id: eventId,
+        title: `🧺 Laundry Day — ${namesLabel}`,
+        memberIds,
+        date: dateStr,
+        startTime: '09:00',
+        endTime: '10:00',
+        category: 'chores',
+        notes: 'Fixed weekly laundry schedule'
+      });
+    }
+
+    if (newLaundryEvents.length > 0) {
+      setEvents(prev => [...prev, ...newLaundryEvents]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCloudDataLoaded, members.length]);
+
   // Family Members: cache locally always; push to Supabase once the initial cloud load has finished.
   useEffect(() => {
     storageService.saveMembers(members);
@@ -248,6 +298,46 @@ export default function App() {
     }
   };
 
+  // For daily-tracked chores (ones with weekStartDate — the 6 rotating areas):
+  // toggles a single day within that week's checklist on/off. The chore is only
+  // considered fully "isCompleted" once every day from weekStartDate to dueDate is checked.
+  const handleToggleChoreDay = (choreId: string, dateStr: string) => {
+    const target = chores.find(c => c.id === choreId);
+    if (!target || !target.weekStartDate) return;
+
+    const currentDates = target.completedDates || [];
+    const isCurrentlyDone = currentDates.includes(dateStr);
+    const nextDates = isCurrentlyDone
+      ? currentDates.filter(d => d !== dateStr)
+      : [...currentDates, dateStr];
+
+    // Total days in this chore's active week (inclusive of both ends)
+    const start = new Date(target.weekStartDate + 'T00:00:00');
+    const end = new Date(target.dueDate + 'T00:00:00');
+    const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+    const nowFullyComplete = nextDates.length >= totalDays;
+
+    setChores(chores.map(c =>
+      c.id === choreId
+        ? { ...c, completedDates: nextDates, isCompleted: nowFullyComplete, completedAt: nowFullyComplete ? todayStr : undefined }
+        : c
+    ));
+
+    if (!isCurrentlyDone) {
+      // Marking a day done (not un-marking) — celebrate. Bigger burst if this
+      // was the last remaining day across ALL chores for the week.
+      const remainingAfterThis = chores.some(c => {
+        if (c.id === choreId) return !nowFullyComplete;
+        return !c.isCompleted;
+      });
+      if (!remainingAfterThis) {
+        celebrateBigMilestone();
+      } else {
+        celebrateChoreComplete();
+      }
+    }
+  };
+
   const handleSaveChore = (partialChore: Partial<ChoreItem>) => {
     if (partialChore.id) {
       setChores(chores.map(c => c.id === partialChore.id ? { ...c, ...partialChore } as ChoreItem : c));
@@ -323,8 +413,12 @@ export default function App() {
     const weekEnd = saturday.toISOString().split('T')[0]; // the shared deadline for every chore this round
 
     // Clear out any previously-randomized chores for this same week so re-rolling doesn't duplicate
+    // (both the rotating area chores AND the fixed laundry day chores)
     const poolTitles = new Set(WEEKLY_CHORE_POOL.map(p => p.title));
-    const keptChores = chores.filter(c => !(poolTitles.has(c.title) && c.dueDate >= weekStart && c.dueDate <= weekEnd));
+    const keptChores = chores.filter(c => {
+      const isThisWeekRandomized = (poolTitles.has(c.title) || c.area === 'Laundry Day') && c.dueDate >= weekStart && c.dueDate <= weekEnd;
+      return !isThisWeekRandomized;
+    });
 
     // Permanently excluded from chores (e.g. lives out of town) — never eligible, regardless of Away status
     const eligibleMembers = members.filter(m => !m.excludeFromChores);
@@ -375,12 +469,39 @@ export default function App() {
       assignedMemberId: memberId,
       frequency: 'Weekly',
       dueDate: weekEnd,
+      weekStartDate: weekStart, // marks this as a daily-tracked chore (Sun–Sat checklist)
       isCompleted: false,
+      completedDates: [],
       priority: 'Medium',
       points: preset.points
     }));
 
-    setChores([...keptChores, ...newChores]);
+    // Fixed laundry day assignments — never randomized, always the same people
+    // on the same days. These are single-day chores (not daily-tracked).
+    const laundryChores: ChoreItem[] = [];
+    LAUNDRY_SCHEDULE.forEach((entry, scheduleIdx) => {
+      const laundryDate = new Date(sunday);
+      laundryDate.setDate(sunday.getDate() + entry.dayOfWeek);
+      const laundryDateStr = laundryDate.toISOString().split('T')[0];
+
+      entry.memberNames.forEach((name, nameIdx) => {
+        const member = members.find(m => m.name.toLowerCase() === name.toLowerCase());
+        if (!member) return; // name not found among current family members — skip silently
+        laundryChores.push({
+          id: `chore-laundry-${Date.now()}-${scheduleIdx}-${nameIdx}`,
+          title: 'Laundry Day',
+          area: 'Laundry Day',
+          assignedMemberId: member.id,
+          frequency: 'Weekly',
+          dueDate: laundryDateStr,
+          isCompleted: false,
+          priority: 'Medium',
+          points: 15
+        });
+      });
+    });
+
+    setChores([...keptChores, ...newChores, ...laundryChores]);
     setActiveTab('chores');
 
     // Group flat area assignments by member so each person gets ONE notification
@@ -418,12 +539,15 @@ export default function App() {
     }).catch(err => console.error('Chore notification push failed:', err));
 
     const summary = newChores
-      .map(c => `${members.find(m => m.id === c.assignedMemberId)?.name || 'Someone'} → ${c.area} (${AREA_CHECKLISTS[c.area].length} tasks)`)
+      .map(c => `${members.find(m => m.id === c.assignedMemberId)?.name || 'Someone'} → ${c.area} (${AREA_CHECKLISTS[c.area].length} tasks/day)`)
       .join('\n');
+    const laundrySummary = laundryChores
+      .map(c => `${members.find(m => m.id === c.assignedMemberId)?.name || '?'} — ${new Date(c.dueDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' })}`)
+      .join(', ');
     const awayNote = awayMembersThisWeek.length > 0
       ? `\n\n✈️ Skipped this week (marked Away): ${awayMembersThisWeek.map(m => m.name).join(', ')}`
       : '';
-    alert(`🎲 This week's chores are randomized (balanced by workload)!\n\n${summary}${awayNote}`);
+    alert(`🎲 This week's chores are randomized (balanced by workload)!\n\n${summary}\n\n🧺 Laundry Day: ${laundrySummary}${awayNote}`);
   };
 
   // --- REWARDS HANDLERS ---
@@ -810,6 +934,7 @@ export default function App() {
             chores={chores}
             members={members}
             onToggleChore={handleToggleChore}
+            onToggleChoreDay={handleToggleChoreDay}
             onAddChore={() => {
               setChoreToEdit(null);
               setShowAddChoreModal(true);
