@@ -26,6 +26,7 @@ interface ChoresViewProps {
   chores: ChoreItem[];
   members: FamilyMember[];
   onToggleChore: (id: string) => void;
+  onToggleChoreDay: (choreId: string, dateStr: string) => void;
   onAddChore: () => void;
   onEditChore: (chore: ChoreItem) => void;
   onDeleteChore: (id: string) => void;
@@ -39,13 +40,29 @@ const areaColorMap: Record<ChoreArea, { bg: string; text: string; border: string
   'Dining Room': { bg: 'bg-teal-100 dark:bg-teal-950/70', text: 'text-teal-900 dark:text-teal-200', border: 'border-teal-300 dark:border-teal-700' },
   'Half Bathroom & Foyer': { bg: 'bg-cyan-100 dark:bg-cyan-950/70', text: 'text-cyan-900 dark:text-cyan-200', border: 'border-cyan-300 dark:border-cyan-700' },
   'Laundry Room': { bg: 'bg-rose-100 dark:bg-rose-950/70', text: 'text-rose-900 dark:text-rose-200', border: 'border-rose-300 dark:border-rose-700' },
-  'Staircase': { bg: 'bg-orange-100 dark:bg-orange-950/70', text: 'text-orange-900 dark:text-orange-200', border: 'border-orange-300 dark:border-orange-700' }
+  'Staircase': { bg: 'bg-orange-100 dark:bg-orange-950/70', text: 'text-orange-900 dark:text-orange-200', border: 'border-orange-300 dark:border-orange-700' },
+  'Laundry Day': { bg: 'bg-fuchsia-100 dark:bg-fuchsia-950/70', text: 'text-fuchsia-900 dark:text-fuchsia-200', border: 'border-fuchsia-300 dark:border-fuchsia-700' }
+};
+
+// Builds the list of YYYY-MM-DD dates a daily-tracked chore spans (weekStartDate → dueDate inclusive)
+const getChoreWeekDates = (chore: ChoreItem): string[] => {
+  if (!chore.weekStartDate) return [];
+  const dates: string[] = [];
+  const start = new Date(chore.weekStartDate + 'T00:00:00');
+  const end = new Date(chore.dueDate + 'T00:00:00');
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    dates.push(cursor.toISOString().split('T')[0]);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
 };
 
 export const ChoresView: React.FC<ChoresViewProps> = ({
   chores,
   members,
   onToggleChore,
+  onToggleChoreDay,
   onAddChore,
   onEditChore,
   onDeleteChore,
@@ -75,12 +92,19 @@ export const ChoresView: React.FC<ChoresViewProps> = ({
   const completedCount = chores.filter(c => c.isCompleted).length;
   const overdueCount = chores.filter(c => !c.isCompleted && c.dueDate < todayStr).length;
 
-  // Calculate points per member
+  // Calculate points per member — daily-tracked chores award points proportionally
+  // to how many days were checked off; simple chores award full points on completion.
   const memberPointsMap: Record<string, number> = {};
   members.forEach(m => { memberPointsMap[m.id] = 0; });
 
   chores.forEach(c => {
-    if (c.isCompleted && c.assignedMemberId && memberPointsMap[c.assignedMemberId] !== undefined) {
+    if (!c.assignedMemberId || memberPointsMap[c.assignedMemberId] === undefined) return;
+
+    if (c.weekStartDate) {
+      const totalDays = getChoreWeekDates(c).length || 1;
+      const doneDays = (c.completedDates || []).length;
+      memberPointsMap[c.assignedMemberId] += Math.round(((c.points || 10) / totalDays) * doneDays);
+    } else if (c.isCompleted) {
       memberPointsMap[c.assignedMemberId] += c.points || 10;
     }
   });
@@ -91,7 +115,8 @@ export const ChoresView: React.FC<ChoresViewProps> = ({
     'Dining Room',
     'Half Bathroom & Foyer', 
     'Laundry Room',
-    'Staircase'
+    'Staircase',
+    'Laundry Day'
   ];
 
   return (
@@ -399,23 +424,25 @@ export const ChoresView: React.FC<ChoresViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Title & Checkbox */}
+                    {/* Title & Checkbox (simple chores) OR Daily Tracker (rotating area chores) */}
                     <div className="flex items-start space-x-3 pt-1">
-                      <button
-                        onClick={() => onToggleChore(chore.id)}
-                        className={`mt-0.5 p-1 rounded-xl transition-transform hover:scale-110 flex-shrink-0 ${
-                          chore.isCompleted
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-slate-300 hover:text-cyan-600'
-                        }`}
-                        title={chore.isCompleted ? 'Mark incomplete' : 'Mark complete'}
-                      >
-                        {chore.isCompleted ? (
-                          <CheckCircle2 className="w-6 h-6 fill-emerald-100 dark:fill-emerald-950" />
-                        ) : (
-                          <Circle className="w-6 h-6" />
-                        )}
-                      </button>
+                      {!chore.weekStartDate && (
+                        <button
+                          onClick={() => onToggleChore(chore.id)}
+                          className={`mt-0.5 p-1 rounded-xl transition-transform hover:scale-110 flex-shrink-0 ${
+                            chore.isCompleted
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-slate-300 hover:text-cyan-600'
+                          }`}
+                          title={chore.isCompleted ? 'Mark incomplete' : 'Mark complete'}
+                        >
+                          {chore.isCompleted ? (
+                            <CheckCircle2 className="w-6 h-6 fill-emerald-100 dark:fill-emerald-950" />
+                          ) : (
+                            <Circle className="w-6 h-6" />
+                          )}
+                        </button>
+                      )}
 
                       <div className="flex-1">
                         <h4 className={`font-bold text-slate-900 dark:text-white text-base leading-snug ${
@@ -428,6 +455,37 @@ export const ChoresView: React.FC<ChoresViewProps> = ({
                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
                             {chore.notes}
                           </p>
+                        )}
+
+                        {/* Daily tracker: one toggle per day this chore is active (Sun–Sat) */}
+                        {chore.weekStartDate && (
+                          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                            {getChoreWeekDates(chore).map(dateStr => {
+                              const d = new Date(dateStr + 'T00:00:00');
+                              const dayLetter = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+                              const isDone = (chore.completedDates || []).includes(dateStr);
+                              const isFuture = dateStr > todayStr;
+                              return (
+                                <button
+                                  key={dateStr}
+                                  onClick={() => onToggleChoreDay(chore.id, dateStr)}
+                                  title={d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                                  className={`w-8 h-8 rounded-lg text-xs font-extrabold flex items-center justify-center transition-all ${
+                                    isDone
+                                      ? 'bg-emerald-500 text-white shadow-sm'
+                                      : isFuture
+                                      ? 'bg-slate-50 text-slate-300 dark:bg-slate-800/50 dark:text-slate-600 border border-dashed border-slate-200 dark:border-slate-700'
+                                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 hover:bg-cyan-100 hover:text-cyan-700 border border-slate-200 dark:border-slate-700'
+                                  }`}
+                                >
+                                  {dayLetter}
+                                </button>
+                              );
+                            })}
+                            <span className="text-[10px] font-bold text-slate-400 ml-1">
+                              {(chore.completedDates || []).length}/{getChoreWeekDates(chore).length} days
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>
