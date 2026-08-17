@@ -30,11 +30,31 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Lifetime points earned per member (same calculation as the Chores leaderboard)
+  // Same date-range helper used in ChoresView, for daily-tracked chores
+  const getChoreWeekDates = (chore: ChoreItem): string[] => {
+    if (!chore.weekStartDate) return [];
+    const dates: string[] = [];
+    const start = new Date(chore.weekStartDate + 'T00:00:00');
+    const end = new Date(chore.dueDate + 'T00:00:00');
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      dates.push(cursor.toISOString().split('T')[0]);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return dates;
+  };
+
+  // Lifetime points earned per member (same calculation as the Chores leaderboard) —
+  // daily-tracked chores award points proportionally to days completed.
   const earnedMap: Record<string, number> = {};
   members.forEach(m => { earnedMap[m.id] = 0; });
   chores.forEach(c => {
-    if (c.isCompleted && c.assignedMemberId && earnedMap[c.assignedMemberId] !== undefined) {
+    if (!c.assignedMemberId || earnedMap[c.assignedMemberId] === undefined) return;
+    if (c.weekStartDate) {
+      const totalDays = getChoreWeekDates(c).length || 1;
+      const doneDays = (c.completedDates || []).length;
+      earnedMap[c.assignedMemberId] += Math.round(((c.points || 10) / totalDays) * doneDays);
+    } else if (c.isCompleted) {
       earnedMap[c.assignedMemberId] += c.points || 10;
     }
   });
