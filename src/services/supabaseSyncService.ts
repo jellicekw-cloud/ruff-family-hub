@@ -364,8 +364,10 @@ interface ChoreRow {
   assigned_member_id: string | null;
   frequency: string;
   due_date: string;
+  week_start_date: string | null;
   is_completed: boolean;
   completed_at: string | null;
+  completed_dates: string[];
   priority: string;
   points: number;
   notes: string | null;
@@ -378,8 +380,10 @@ const choreToRow = (c: ChoreItem): ChoreRow => ({
   assigned_member_id: c.assignedMemberId || null,
   frequency: c.frequency,
   due_date: c.dueDate,
+  week_start_date: c.weekStartDate || null,
   is_completed: c.isCompleted,
   completed_at: c.completedAt || null,
+  completed_dates: c.completedDates || [],
   priority: c.priority,
   points: c.points,
   notes: c.notes || null,
@@ -392,8 +396,10 @@ const rowToChore = (r: ChoreRow): ChoreItem => ({
   assignedMemberId: r.assigned_member_id || undefined,
   frequency: r.frequency as ChoreFrequency,
   dueDate: r.due_date,
+  weekStartDate: r.week_start_date || undefined,
   isCompleted: r.is_completed,
   completedAt: r.completed_at || undefined,
+  completedDates: r.completed_dates || [],
   priority: r.priority as ChoreItem['priority'],
   points: r.points,
   notes: r.notes || undefined,
