@@ -110,7 +110,7 @@ export interface SyncCalendarConfig {
 }
 
 export type ChoreFrequency = 'Daily' | 'Weekly' | 'Bi-Weekly' | 'Monthly' | 'Seasonal';
-export type ChoreArea = 'Kitchen' | 'Living Room' | 'Dining Room' | 'Half Bathroom & Foyer' | 'Laundry Room' | 'Staircase';
+export type ChoreArea = 'Kitchen' | 'Living Room' | 'Dining Room' | 'Half Bathroom & Foyer' | 'Laundry Room' | 'Staircase' | 'Laundry Day';
 
 export interface ChoreItem {
   id: string;
@@ -118,11 +118,13 @@ export interface ChoreItem {
   area: ChoreArea;
   assignedMemberId?: string;
   frequency: ChoreFrequency;
-  dueDate: string; // YYYY-MM-DD
-  isCompleted: boolean;
+  dueDate: string; // YYYY-MM-DD — the last day of the active week (Saturday)
+  weekStartDate?: string; // YYYY-MM-DD — first day this chore is active (Sunday); used to build the daily tracker
+  isCompleted: boolean; // true once every day in the tracker is checked off
   completedAt?: string;
+  completedDates?: string[]; // YYYY-MM-DD entries — which days this week have been marked done
   priority: 'Low' | 'Medium' | 'High';
-  points: number;
+  points: number; // total points for fully completing every day this week
   notes?: string;
 }
 
