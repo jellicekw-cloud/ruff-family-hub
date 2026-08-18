@@ -317,11 +317,12 @@ export default function App() {
     const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
     const nowFullyComplete = nextDates.length >= totalDays;
 
-    setChores(chores.map(c =>
+    const updatedChores = chores.map(c =>
       c.id === choreId
         ? { ...c, completedDates: nextDates, isCompleted: nowFullyComplete, completedAt: nowFullyComplete ? todayStr : undefined }
         : c
-    ));
+    );
+    setChores(updatedChores);
 
     if (!isCurrentlyDone) {
       // Marking a day done (not un-marking) — celebrate. Bigger burst if this
@@ -334,6 +335,33 @@ export default function App() {
         celebrateBigMilestone();
       } else {
         celebrateChoreComplete();
+      }
+
+      // "You're up next" nudge: if this completion means the assigned member has
+      // now finished ALL of their rotating chores for the week (not just this one),
+      // notify everyone else who still has an incomplete rotating chore.
+      if (nowFullyComplete && target.assignedMemberId) {
+        const memberId = target.assignedMemberId;
+        const memberStillHasIncompleteRotating = updatedChores.some(
+          c => c.weekStartDate && c.assignedMemberId === memberId && !c.isCompleted
+        );
+
+        if (!memberStillHasIncompleteRotating) {
+          const finisher = members.find(m => m.id === memberId);
+          const membersToNotify = Array.from(new Set(
+            updatedChores
+              .filter(c => c.weekStartDate && !c.isCompleted && c.assignedMemberId && c.assignedMemberId !== memberId)
+              .map(c => c.assignedMemberId as string)
+          ));
+
+          if (finisher && membersToNotify.length > 0) {
+            fetch('/api/notify-chore-encouragement', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ finisherName: finisher.name, memberIdsToNotify: membersToNotify })
+            }).catch(err => console.error('Encouragement notification failed:', err));
+          }
+        }
       }
     }
   };
